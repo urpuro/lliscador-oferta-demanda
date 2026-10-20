@@ -44,33 +44,34 @@
 
   /* ---------- Corbes ---------- */
 
-  // Corba en forma directa Q = a + b·P (dos punts qualssevol de la recta).
-  function corbaDirecta(tipus, a, b, limit = null) {
-    return { tipus, a: { q: a, p: 0 }, b: { q: a + 10 * b, p: 10 }, limit };
+  // Corba en forma directa Q = pend·P + ind (dos punts qualssevol de la recta).
+  function corbaDirecta(tipus, ind, pend, limit = null) {
+    return { tipus, a: { q: ind, p: 0 }, b: { q: ind + 10 * pend, p: 10 }, limit };
   }
 
-  // Punts de la recta Q = a + b·P amb coordenades enteres dins del gràfic.
-  function puntsBonics(a, b) {
+  // Punts de la recta Q = pend·P + ind amb coordenades enteres dins del gràfic.
+  function puntsBonics(ind, pend) {
     const res = [];
     for (let p = 0; p <= EIXOS.pMax; p += 5) {
-      const q = a + b * p;
+      const q = ind + pend * p;
       if (Number.isInteger(q) && q >= 0 && q <= EIXOS.qMax) res.push({ q, p });
     }
     return res;
   }
 
   // Mateixa corba, però definida per dos punts ben visibles del gràfic.
-  function corbaVisible(tipus, a, b, limit = null) {
-    const ps = puntsBonics(a, b);
+  function corbaVisible(tipus, ind, pend, limit = null) {
+    const ps = puntsBonics(ind, pend);
     if (ps.length < 2) return null;
     // Dos punts separats, sense anar als extrems.
     const i = Math.floor(ps.length / 4), j = ps.length - 1 - Math.floor(ps.length / 4);
     return { tipus, a: ps[i], b: ps[j === i ? i + 1 : j], limit };
   }
 
+  // Coeficients de la recta: forma inversa P = m·Q + n i forma directa Q = pend·P + ind.
   const coefs = corba => {
     const r = Motor.recta(corba.a, corba.b);
-    return { n: r.n, m: r.m, a: -r.n / r.m, b: 1 / r.m };
+    return { n: r.n, m: r.m, ind: -r.n / r.m, pend: 1 / r.m };
   };
   const nomQ = tipus => (tipus === 'demanda' ? 'Qd' : 'Qs');
   const laCorba = tipus => (tipus === 'demanda' ? 'la demanda' : 'l\'oferta');
@@ -81,22 +82,22 @@
   function textCorba(corba, forma = 'directa') {
     const c = coefs(corba);
     if (forma === 'inversa') return `P = ${expressio(c.n, c.m, 'Q')}`;
-    return `${nomQ(corba.tipus)} = ${expressio(c.a, c.b, 'P')}`;
+    return `${nomQ(corba.tipus)} = ${expressio(c.ind, c.pend, 'P')}`;
   }
   const inversaBonica = corba => { const c = coefs(corba); return esBonic(c.n) && esBonic(c.m); };
 
   // Parella demanda-oferta lineal amb un equilibri de nombres rodons.
-  //  Qd = aD + bD·P (bD < 0) · Qs = aS + bS·P (bS > 0) · equilibri (Q, P)
+  //  Qd = pendD·P + indD (pendD < 0) · Qs = pendS·P + indS (pendS > 0) · equilibri (Q, P)
   function parella(r, opc = {}) {
     const pendentsD = opc.pendentsD || [0.5, 1, 2, 3];
     const pendentsS = opc.pendentsS || [0.5, 1, 2];
     for (;;) {
       const P = entre(r, 20, 80, 5), Q = entre(r, 20, 70, 5);
-      const bD = -tria(r, pendentsD), bS = tria(r, pendentsS);
-      const aD = Q - bD * P, aS = Q - bS * P;
-      if (!Number.isInteger(aD) || !Number.isInteger(aS) || aD > 300) continue;
-      if (opc.valida && !opc.valida({ aD, bD, aS, bS, P, Q })) continue;
-      return { aD, bD, aS, bS, P, Q };
+      const pendD = -tria(r, pendentsD), pendS = tria(r, pendentsS);
+      const indD = Q - pendD * P, indS = Q - pendS * P;
+      if (!Number.isInteger(indD) || !Number.isInteger(indS) || indD > 300) continue;
+      if (opc.valida && !opc.valida({ indD, pendD, indS, pendS, P, Q })) continue;
+      return { indD, pendD, indS, pendS, P, Q };
     }
   }
 
@@ -110,16 +111,16 @@
     const tipus = tria(r, ['demanda', 'oferta']);
     const forma = tria(r, ['directa', 'inversa']);
     const presentacio = tria(r, ['taula', 'grafic']);
-    let a, b, P1, P2, Q1, Q2, corba;
+    let ind, pend, P1, P2, Q1, Q2, corba;
     for (;;) {
-      a = tipus === 'demanda' ? entre(r, 60, 140, 10) : entre(r, -30, 20, 10);
-      b = (tipus === 'demanda' ? -1 : 1) * tria(r, [0.5, 1, 2]);
+      ind = tipus === 'demanda' ? entre(r, 60, 140, 10) : entre(r, -30, 20, 10);
+      pend = (tipus === 'demanda' ? -1 : 1) * tria(r, [0.5, 1, 2]);
       P1 = entre(r, 10, 90, 10); P2 = entre(r, 10, 90, 10);
       if (P1 === P2) continue;
       if (P1 > P2) [P1, P2] = [P2, P1];
-      Q1 = a + b * P1; Q2 = a + b * P2;
+      Q1 = ind + pend * P1; Q2 = ind + pend * P2;
       if (![Q1, Q2].every(q => Number.isInteger(q) && q >= 0 && q <= 100)) continue;
-      if (presentacio === 'grafic' && (Q1 % 10 || Q2 % 10)) continue;
+      if (presentacio === 'grafic' && (Q1 % 10 || Q2 % 10 || Q1 > 90 || Q2 > 90)) continue;
       corba = { tipus, a: { q: Q1, p: P1 }, b: { q: Q2, p: P2 }, limit: null };
       if (forma === 'inversa' && !inversaBonica(corba)) continue;
       break;
@@ -130,25 +131,25 @@
       ? [`Quan el preu és ${P1} €, ${qui} ${Q1} unitats. Quan el preu és ${P2} €, en volen ${tipus === 'demanda' ? 'comprar' : 'vendre'} ${Q2}.`]
       : [`Al gràfic hi ha la corba ${deLa(tipus)} d'un mercat. Llegeix les coordenades dels dos punts marcats.`];
     enunciat.push(forma === 'directa'
-      ? `Escriu la funció ${deLa(tipus)} en forma directa, ${nomQ(tipus)} = a + b·P.`
-      : `Escriu la funció ${deLa(tipus)} en forma inversa, P = a + b·Q.`);
+      ? `Escriu la funció ${deLa(tipus)} en forma directa, ${nomQ(tipus)} = a·P + b (a és el pendent i b, el terme independent).`
+      : `Escriu la funció ${deLa(tipus)} en forma inversa, P = a·Q + b (a és el pendent i b, el terme independent).`);
 
     const camps = forma === 'directa'
-      ? [campNombre('a', `${nomQ(tipus)} =`, c.a, '+'), campNombre('b', '', c.b, '· P')]
-      : [campNombre('a', 'P =', c.n, '+'), campNombre('b', '', c.m, '· Q')];
+      ? [campNombre('a', `${nomQ(tipus)} =`, c.pend, '· P +'), campNombre('b', '', c.ind)]
+      : [campNombre('a', 'P =', c.m, '· Q +'), campNombre('b', '', c.n)];
 
     const solucio = forma === 'directa'
       ? [
         `Els dos punts són (Q = ${Q1}, P = ${P1}) i (Q = ${Q2}, P = ${P2}).`,
-        `Pendent: b = (Q₂ − Q₁) / (P₂ − P₁) = (${Q2} − ${Q1}) / (${P2} − ${P1}) = ${num(c.b)}`,
-        `Terme independent: a = Q₁ − b·P₁ = ${Q1} − ${paren(c.b)}·${P1} = ${num(c.a)}`,
-        `${nomQ(tipus)} = ${expressio(c.a, c.b, 'P')}`,
+        `Pendent: a = (Q₂ − Q₁) / (P₂ − P₁) = (${Q2} − ${Q1}) / (${P2} − ${P1}) = ${num(c.pend)}`,
+        `Terme independent: b = Q₁ − a·P₁ = ${Q1} − ${paren(c.pend)}·${P1} = ${num(c.ind)}`,
+        `a = ${num(c.pend)} i b = ${num(c.ind)}, és a dir, ${nomQ(tipus)} = ${expressio(c.ind, c.pend, 'P')}`,
       ]
       : [
         `Els dos punts són (Q = ${Q1}, P = ${P1}) i (Q = ${Q2}, P = ${P2}).`,
-        `Pendent: b = (P₂ − P₁) / (Q₂ − Q₁) = (${P2} − ${P1}) / (${Q2} − ${Q1}) = ${num(c.m)}`,
-        `Terme independent: a = P₁ − b·Q₁ = ${P1} − ${paren(c.m)}·${Q1} = ${num(c.n)}`,
-        `P = ${expressio(c.n, c.m, 'Q')}`,
+        `Pendent: a = (P₂ − P₁) / (Q₂ − Q₁) = (${P2} − ${P1}) / (${Q2} − ${Q1}) = ${num(c.m)}. És la inclinació de la recta al gràfic (Q a l'eix horitzontal, P al vertical).`,
+        `Terme independent: b = P₁ − a·Q₁ = ${P1} − ${paren(c.m)}·${Q1} = ${num(c.n)}. És el preu on la recta talla l'eix vertical.`,
+        `a = ${num(c.m)} i b = ${num(c.n)}, és a dir, P = ${expressio(c.n, c.m, 'Q')}`,
       ];
 
     return {
@@ -157,14 +158,14 @@
       enunciat,
       camps,
       enLinia: true,
-      nota: 'Si un coeficient és negatiu, escriu-lo amb el signe menys (per exemple, −2).',
+      nota: 'Si un coeficient és negatiu, escriu-lo amb el signe menys (per exemple, −2). Si el terme independent és zero, escriu 0.',
       grafic: presentacio === 'grafic'
         ? { demanda: tipus === 'demanda' ? corba : null, oferta: tipus === 'oferta' ? corba : null, editables: [], marcaPunts: true }
         : null,
       despres: { demanda: tipus === 'demanda' ? corba : null, oferta: tipus === 'oferta' ? corba : null },
       pista: forma === 'directa'
-        ? 'El pendent b és quant canvia la quantitat quan el preu augmenta 1 €: divideix la diferència de quantitats per la diferència de preus. Després, substitueix un dels punts per trobar a.'
-        : 'El pendent b és quant canvia el preu quan la quantitat augmenta 1 unitat: divideix la diferència de preus per la diferència de quantitats. Després, substitueix un dels punts per trobar a.',
+        ? 'El pendent a és quant canvia la quantitat quan el preu augmenta 1 €: divideix la diferència de quantitats per la diferència de preus. Després, substitueix un dels punts per trobar el terme independent b.'
+        : 'El pendent a és quant canvia el preu quan la quantitat augmenta 1 unitat: divideix la diferència de preus per la diferència de quantitats. Després, substitueix un dels punts per trobar el terme independent b.',
       solucio,
     };
   }
@@ -175,8 +176,8 @@
     let k, D, O;
     do {
       k = parella(r, { pendentsD: [0.5, 1, 2], pendentsS: [0.5, 1, 2] });
-      D = corbaVisible('demanda', k.aD, k.bD);
-      O = corbaVisible('oferta', k.aS, k.bS);
+      D = corbaVisible('demanda', k.indD, k.pendD);
+      O = corbaVisible('oferta', k.indS, k.pendS);
     } while (!D || !O);
 
     const inicial = {
@@ -213,7 +214,7 @@
 
   function equilibri(r) {
     const k = parella(r);
-    const D = corbaDirecta('demanda', k.aD, k.bD), O = corbaDirecta('oferta', k.aS, k.bS);
+    const D = corbaDirecta('demanda', k.indD, k.pendD), O = corbaDirecta('oferta', k.indS, k.pendS);
     const formaD = inversaBonica(D) ? tria(r, ['directa', 'directa', 'inversa']) : 'directa';
     const formaO = inversaBonica(O) ? tria(r, ['directa', 'directa', 'inversa']) : 'directa';
     const eq = Motor.equilibri(D, O);
@@ -244,8 +245,8 @@
     let k, D, O;
     do {
       k = parella(r, { pendentsD: [0.5, 1, 2], pendentsS: [0.5, 1, 2] });
-      D = corbaVisible('demanda', k.aD, k.bD);
-      O = corbaVisible('oferta', k.aS, k.bS);
+      D = corbaVisible('demanda', k.indD, k.pendD);
+      O = corbaVisible('oferta', k.indS, k.pendS);
     } while (!D || !O);
     const inicial = { tipus: 'demanda', a: { q: 10, p: 30 }, b: { q: 40, p: 10 }, limit: null };
     const eq0 = Motor.equilibri(inicial, O);
@@ -265,7 +266,7 @@
       solucioGrafic: { demanda: D, oferta: O },
       pista: `L'equilibri és el punt on es tallen les dues corbes. Busca el punt (Q = ${num(k.Q)}, P = ${num(k.P)}) sobre l'oferta i fes-hi passar la demanda, amb pendent negatiu.`,
       solucio: [
-        `El punt (Q = ${num(k.Q)}, P = ${num(k.P)}) és sobre l'oferta: ${nomQ('oferta')} = ${expressio(k.aS, k.bS, 'P')} = ${substitucio(k.aS, k.bS, k.P)} = ${num(k.Q)}.`,
+        `El punt (Q = ${num(k.Q)}, P = ${num(k.P)}) és sobre l'oferta: ${nomQ('oferta')} = ${expressio(k.indS, k.pendS, 'P')} = ${substitucio(k.indS, k.pendS, k.P)} = ${num(k.Q)}.`,
         'Qualsevol demanda amb pendent negatiu que passi per aquest punt hi té l\'equilibri.',
         `Per exemple, ${textCorba(D)}, que passa per (${D.a.q}, ${D.a.p}) i (${D.b.q}, ${D.b.p}).`,
       ],
@@ -374,10 +375,10 @@
     for (;;) {
       k = parella(r);
       P0 = k.P + tria(r, [-1, 1]) * entre(r, 5, 25, 5);
-      qd = k.aD + k.bD * P0; qs = k.aS + k.bS * P0;
+      qd = k.indD + k.pendD * P0; qs = k.indS + k.pendS * P0;
       if (P0 >= 5 && P0 <= 95 && qd > 0 && qs > 0) break;
     }
-    const D = corbaDirecta('demanda', k.aD, k.bD), O = corbaDirecta('oferta', k.aS, k.bS);
+    const D = corbaDirecta('demanda', k.indD, k.pendD), O = corbaDirecta('oferta', k.indS, k.pendS);
     const situacio = qd > qs ? 'exces-demanda' : 'exces-oferta';
     return {
       tipus: 'exces',
@@ -403,8 +404,8 @@
       ],
       pista: 'Substitueix el preu a cada funció. Si es demana més del que s\'ofereix, falta producte (escassetat); si s\'ofereix més del que es demana, en sobra (excedent).',
       solucio: [
-        `Qd = ${substitucio(k.aD, k.bD, P0)} = ${num(qd)}`,
-        `Qs = ${substitucio(k.aS, k.bS, P0)} = ${num(qs)}`,
+        `Qd = ${substitucio(k.indD, k.pendD, P0)} = ${num(qd)}`,
+        `Qs = ${substitucio(k.indS, k.pendS, P0)} = ${num(qs)}`,
         qd > qs
           ? `Es demanen ${num(qd)} unitats però només se n'ofereixen ${num(qs)}: hi ha un excés de demanda de ${num(qd - qs)} unitats. Com que hi ha compradors que es queden sense, el preu tendeix a pujar (cap a l'equilibri, P* = ${num(k.P)} €).`
           : `S'ofereixen ${num(qs)} unitats però només se'n demanen ${num(qd)}: hi ha un excés d'oferta de ${num(qs - qd)} unitats. Com que els venedors no ho poden vendre tot, el preu tendeix a baixar (cap a l'equilibri, P* = ${num(k.P)} €).`,
@@ -423,8 +424,8 @@
       if (variant === 'oferta-no-actua') L = k.Q + entre(r, 5, 25, 5);
       else L = k.Q - entre(r, 5, 20, 5);
       if (L < 10 || L > 95) continue;
-      D = corbaDirecta('demanda', k.aD, k.bD, variant === 'demanda-actua' ? L : null);
-      O = corbaDirecta('oferta', k.aS, k.bS, variant === 'demanda-actua' ? null : L);
+      D = corbaDirecta('demanda', k.indD, k.pendD, variant === 'demanda-actua' ? L : null);
+      O = corbaDirecta('oferta', k.indS, k.pendS, variant === 'demanda-actua' ? null : L);
       eq = Motor.equilibri(D, O);
       if (eq.tipus !== 'punt' || !esBonic(eq.p) || eq.p <= 0 || eq.p > 100) continue;
       break;
@@ -471,12 +472,12 @@
     let k, E;
     for (;;) {
       k = parella(r);
-      E = (tipus === 'demanda' ? k.bD : k.bS) * k.P / k.Q;
+      E = (tipus === 'demanda' ? k.pendD : k.pendS) * k.P / k.Q;
       const a = Math.abs(E);
       if (Math.abs(a - 1) < 1e-9 || Math.abs(a - 1) > 0.08) break;
     }
-    const D = corbaDirecta('demanda', k.aD, k.bD), O = corbaDirecta('oferta', k.aS, k.bS);
-    const b = tipus === 'demanda' ? k.bD : k.bS;
+    const D = corbaDirecta('demanda', k.indD, k.pendD), O = corbaDirecta('oferta', k.indS, k.pendS);
+    const pend = tipus === 'demanda' ? k.pendD : k.pendS;
     const a = Math.abs(E);
     const classe = Math.abs(a - 1) < 1e-9 ? 'unitaria' : (a > 1 ? 'elastica' : 'inelastica');
     const textClasse = { elastica: 'elàstica', inelastica: 'inelàstica', unitaria: 'unitària' }[classe];
@@ -498,10 +499,10 @@
         ], classe),
       ],
       nota: 'Pots arrodonir a dos decimals.',
-      pista: `L'elasticitat preu és E = (ΔQ / ΔP) · (P / Q). En una funció ${nomQ(tipus)} = a + b·P, el quocient ΔQ / ΔP és el pendent b.`,
+      pista: `L'elasticitat preu és E = (ΔQ / ΔP) · (P / Q). En una funció ${nomQ(tipus)} = a·P + b, el quocient ΔQ / ΔP és el pendent a.`,
       solucio: [
-        `El pendent de ${textCorba(tipus === 'demanda' ? D : O)} és ΔQ / ΔP = ${num(b)}.`,
-        `E = ${paren(b)} · ${num(k.P)} / ${num(k.Q)} ${igual(E)}`,
+        `El pendent de ${textCorba(tipus === 'demanda' ? D : O)} és ΔQ / ΔP = ${num(pend)}.`,
+        `E = ${paren(pend)} · ${num(k.P)} / ${num(k.Q)} ${igual(E)}`,
         `Com que |E| ${classe === 'unitaria' ? '= 1' : (a > 1 ? '> 1' : '< 1')}, ${laCorba(tipus)} és ${textClasse} en aquest punt.` +
           (tipus === 'demanda' ? ' (L\'elasticitat de la demanda surt negativa perquè preu i quantitat van en sentit contrari; per classificar-la mirem el valor absolut.)' : ''),
       ],

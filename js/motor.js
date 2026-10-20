@@ -359,15 +359,16 @@
     if (!d || !o) return [];
     const lin = [];
 
-    const directa = pc => ({ a: -pc.n / pc.m, b: 1 / pc.m });
+    // Forma directa Q = pend·P + ind.
+    const directa = pc => ({ ind: -pc.n / pc.m, pend: 1 / pc.m });
 
     if (d.forma === 'lineal' && o.forma === 'lineal') {
       const D = directa(d), S = directa(o);
       lin.push('A l\'equilibri, la quantitat demandada és igual a la quantitat oferta: Qd = Qs.');
-      lin.push(`${expressio(D.a, D.b, 'P')} = ${expressio(S.a, S.b, 'P')}`);
-      lin.push(`Agrupem: ${num(D.a - S.a)} = ${expressio(0, S.b - D.b, 'P')}`);
-      lin.push(`P* = ${num(D.a - S.a)} / ${num(S.b - D.b)} ${igual(eq.p)}`);
-      lin.push(`Q* = ${substitucio(D.a, D.b, eq.p)} ${igual(eq.q)}`);
+      lin.push(`${expressio(D.ind, D.pend, 'P')} = ${expressio(S.ind, S.pend, 'P')}`);
+      lin.push(`Agrupem: ${num(D.ind - S.ind)} = ${expressio(0, S.pend - D.pend, 'P')}`);
+      lin.push(`P* = ${num(D.ind - S.ind)} / ${num(S.pend - D.pend)} ${igual(eq.p)}`);
+      lin.push(`Q* = ${substitucio(D.ind, D.pend, eq.p)} ${igual(eq.q)}`);
       return lin;
     }
 
@@ -397,8 +398,8 @@
       if (altra.forma === 'lineal') {
         const A = directa(altra);
         const Qn = altreNom === 'demanda' ? 'Qd' : 'Qs';
-        lin.push(`La quantitat la determina ${laCorba[altreNom]}: ${Qn} = ${expressio(A.a, A.b, 'P')}`);
-        lin.push(`Q* = ${substitucio(A.a, A.b, pc.p)} ${igual(eq.q)}`);
+        lin.push(`La quantitat la determina ${laCorba[altreNom]}: ${Qn} = ${expressio(A.ind, A.pend, 'P')}`);
+        lin.push(`Q* = ${substitucio(A.ind, A.pend, pc.p)} ${igual(eq.q)}`);
       }
       return lin;
     }

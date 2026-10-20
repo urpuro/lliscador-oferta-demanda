@@ -8,7 +8,7 @@ Aplicació web interactiva per entendre l'**oferta**, la **demanda** i el **preu
   - Cada corba és una recta definida per **dos punts** que pots arrossegar (o escriure'n les coordenades).
   - Arrossegant la corba sencera la desplaces paral·lelament.
   - Una corba pot tenir un **esgotament**: l'oferta, a partir de la capacitat màxima, es torna vertical cap a l'infinit; la demanda, a partir de la saturació, es torna vertical fins a preu zero. El rombe del gràfic marca on passa.
-  - En tot moment es veuen les **equacions** de les dues corbes (forma directa `Q = a + bP` i inversa `P = c + dQ`, per trams si cal), el **preu i la quantitat d'equilibri**, les **elasticitats** a l'equilibri i, si es vol, els passos del càlcul.
+  - En tot moment es veuen les **equacions** de les dues corbes (forma directa i inversa, per trams si cal), el **preu i la quantitat d'equilibri**, les **elasticitats** a l'equilibri i, si es vol, els passos del càlcul.
   - *Prova un preu*: una línia de preu que es pot arrossegar per veure l'excés de demanda o d'oferta.
 - **Practica**: vuit tipus d'exercicis, generats a l'atzar (cada exercici nou té funcions i números diferents):
   1. *Funció a partir de dos punts*: escriure l'equació (forma directa o inversa) a partir d'un enunciat o del gràfic.
