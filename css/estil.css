@@ -1,0 +1,222 @@
+:root {
+  --fons: #f5f6f8;
+  --targeta: #ffffff;
+  --text: #1d2330;
+  --suau: #5d6576;
+  --vora: #dde1e8;
+  --graella: #eceff3;
+  --primari: #2557a7;
+  --primari-text: #ffffff;
+  --demanda: #2557a7;
+  --demanda-fons: #e8effb;
+  --oferta: #c2410c;
+  --oferta-fons: #fdeee6;
+  --equilibri: #18794e;
+  --equilibri-fons: #e5f5ec;
+  --preu: #7a4cc2;
+  --alerta: #b42318;
+  --alerta-fons: #fdecea;
+  --avis-fons: #fff7d6;
+  --radi: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fons: #14171c;
+    --targeta: #1d2128;
+    --text: #e7e9ee;
+    --suau: #9aa2b1;
+    --vora: #323844;
+    --graella: #262b33;
+    --primari: #6d9cf0;
+    --primari-text: #0d1320;
+    --demanda: #6d9cf0;
+    --demanda-fons: #1c2840;
+    --oferta: #f0894f;
+    --oferta-fons: #3a2418;
+    --equilibri: #4cc38a;
+    --equilibri-fons: #16302a;
+    --preu: #b99af0;
+    --alerta: #f47067;
+    --alerta-fons: #3a1e1e;
+    --avis-fons: #34301c;
+  }
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: var(--fons);
+  color: var(--text);
+  line-height: 1.5;
+}
+main { max-width: 1200px; margin: 0 auto; padding: 16px; }
+h1, h2, h3 { margin: 0 0 .5em; line-height: 1.25; }
+h1 { font-size: 1.4rem; }
+h2 { font-size: 1.05rem; }
+
+.capcalera {
+  display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between;
+  max-width: 1200px; margin: 0 auto; padding: 16px 16px 0;
+}
+.capcalera h1 { margin: 0; }
+.pestanyes { display: flex; gap: 4px; background: var(--vora); padding: 3px; border-radius: 9px; }
+.pestanyes a {
+  padding: 5px 14px; border-radius: 7px; text-decoration: none; color: var(--text); font-weight: 500;
+}
+.pestanyes a[aria-current] { background: var(--targeta); box-shadow: 0 1px 2px rgba(0, 0, 0, .12); }
+
+.targeta {
+  background: var(--targeta); border: 1px solid var(--vora); border-radius: var(--radi);
+  padding: 16px; margin-bottom: 16px;
+}
+.boto {
+  font: inherit; padding: 7px 14px; border-radius: 8px; border: 1px solid var(--vora);
+  background: var(--targeta); color: var(--text); cursor: pointer;
+}
+.boto:hover { border-color: var(--primari); }
+a.boto { display: inline-block; text-decoration: none; }
+.boto.primari { background: var(--primari); color: var(--primari-text); border-color: var(--primari); font-weight: 600; }
+
+/* ---------- Selector de cas ---------- */
+
+.tria-cas { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-weight: 600; }
+.tria-cas select {
+  font: inherit; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--vora);
+  background: var(--targeta); color: var(--text); max-width: 100%; flex: 1 1 260px;
+}
+.context { margin: 10px 0 0; }
+.observa { margin: 8px 0 0; padding: 8px 12px; border-radius: 8px; background: var(--avis-fons); }
+.observa::before { content: '💡 '; }
+
+/* ---------- Distribució ---------- */
+
+.graella-explora {
+  display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(300px, 1fr); gap: 16px; align-items: start;
+}
+@media (max-width: 880px) {
+  .graella-explora { grid-template-columns: minmax(0, 1fr); }
+}
+.graella-explora > * { min-width: 0; }
+.grafic-cont { position: sticky; top: 8px; }
+@media (max-width: 880px) {
+  .grafic-cont { position: static; }
+}
+
+/* ---------- Gràfic ---------- */
+
+.grafic { width: 100%; height: auto; display: block; user-select: none; -webkit-user-select: none; }
+.grafic .graella line { stroke: var(--graella); stroke-width: 1; }
+.grafic .eix { stroke: var(--suau); stroke-width: 1.5; }
+.grafic .marca { fill: var(--suau); font-size: 12px; }
+.grafic .titol-eix { fill: var(--suau); font-size: 13px; font-weight: 600; }
+
+.grafic .corba .traç { fill: none; stroke-width: 3.5; stroke-linejoin: round; stroke-linecap: round; }
+.grafic .corba.demanda .traç { stroke: var(--demanda); }
+.grafic .corba.oferta .traç { stroke: var(--oferta); }
+.grafic .corba .toc { fill: none; stroke: transparent; stroke-width: 20; cursor: grab; touch-action: none; }
+.grafic .corba:hover .traç { stroke-width: 5; }
+.grafic .corba .fantasma { fill: none; stroke-width: 1.5; stroke-dasharray: 3 5; opacity: .45; }
+.grafic .corba.demanda .fantasma { stroke: var(--demanda); }
+.grafic .corba.oferta .fantasma { stroke: var(--oferta); }
+.grafic .etiqueta-corba { font-weight: 700; font-size: 16px; }
+.grafic .etiqueta-corba.demanda { fill: var(--demanda); }
+.grafic .etiqueta-corba.oferta { fill: var(--oferta); }
+
+.grafic .guia { stroke: var(--equilibri); stroke-width: 1.5; stroke-dasharray: 5 4; }
+.grafic .punt-eq { fill: var(--equilibri); stroke: var(--targeta); stroke-width: 2; }
+.grafic .tram-eq { stroke: var(--equilibri); stroke-width: 9; stroke-linecap: round; opacity: .55; }
+.grafic .etiqueta-eq { fill: var(--equilibri); font-size: 13px; font-weight: 700; paint-order: stroke; stroke: var(--targeta); stroke-width: 4px; }
+
+.grafic .nansa { cursor: grab; touch-action: none; outline: none; }
+.grafic .nansa .toc { fill: transparent; stroke: transparent; }
+.grafic .nansa .marca-nansa { stroke: var(--targeta); stroke-width: 2.5; }
+.grafic .nansa.demanda .marca-nansa { fill: var(--demanda); }
+.grafic .nansa.oferta .marca-nansa { fill: var(--oferta); }
+.grafic .nansa:hover .marca-nansa, .grafic .nansa:focus-visible .marca-nansa { stroke: var(--text); }
+.grafic .nansa:focus-visible .toc { fill: var(--graella); }
+.grafic .nansa .etiqueta-nansa { font-size: 12px; font-weight: 600; fill: var(--suau); paint-order: stroke; stroke: var(--targeta); stroke-width: 4px; }
+.grafic .nansa.limit .marca-nansa { stroke: var(--text); }
+.grafic.arrossegant, .grafic.arrossegant * { cursor: grabbing; }
+
+.grafic .linia-preu { stroke: var(--preu); stroke-width: 1.5; stroke-dasharray: 2 4; }
+.grafic .nansa.preu { cursor: ns-resize; }
+.grafic .nansa.preu .toc { stroke: transparent; stroke-width: 16; }
+.grafic .nansa.preu .marca-nansa { fill: var(--preu); stroke: none; }
+.grafic .nansa.preu:focus-visible .marca-nansa { stroke: var(--text); stroke-width: 2; }
+.grafic .text-preu { fill: #fff; font-size: 12px; font-weight: 700; }
+.grafic .punt-preu { stroke: var(--targeta); stroke-width: 2; }
+.grafic .punt-preu.demanda { fill: var(--demanda); }
+.grafic .punt-preu.oferta { fill: var(--oferta); }
+.grafic .tram-exces { stroke-width: 10; opacity: .35; }
+.grafic .tram-exces.exces-demanda { stroke: var(--alerta); }
+.grafic .tram-exces.exces-oferta { stroke: var(--preu); }
+
+.sota-grafic { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; margin-top: 8px; }
+.sota-grafic .ajuda { flex: 1 1 260px; margin: 0; }
+.accions { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
+.ajuda { color: var(--suau); font-size: .88rem; }
+.interruptor { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+
+/* ---------- Panell ---------- */
+
+.xifres { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.xifra { background: var(--equilibri-fons); border-radius: 8px; padding: 8px 10px; }
+.xifra span { display: block; font-size: .8rem; color: var(--suau); }
+.xifra strong { font-size: 1.2rem; color: var(--equilibri); }
+
+.elasticitats { list-style: none; margin: 10px 0 0; padding: 0; font-size: .92rem; }
+.elasticitats li { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; padding: 4px 0; border-top: 1px solid var(--vora); }
+.elasticitats li > span:first-child { color: var(--suau); }
+.elasticitats small { color: var(--suau); }
+
+.missatge { margin: 10px 0 0; padding: 8px 12px; border-radius: 8px; background: var(--fons); }
+.missatge.alerta { background: var(--alerta-fons); }
+.missatge.avis { background: var(--avis-fons); }
+.exces-demanda { color: var(--alerta); }
+.exces-oferta { color: var(--preu); }
+
+.passos { margin-top: 10px; }
+.passos summary { cursor: pointer; color: var(--primari); font-weight: 600; }
+.passos ol { margin: 8px 0 0; padding-left: 1.4em; }
+.passos li { margin: 3px 0; }
+
+.corba-eq { border-left: 5px solid; padding-left: 12px; }
+.corba-eq + .corba-eq { margin-top: 14px; }
+.corba-eq h2 { margin-bottom: .2em; }
+.demanda > h2, .demanda > h3 { color: var(--demanda); }
+.oferta > h2, .oferta > h3 { color: var(--oferta); }
+.corba-eq.demanda { border-left-color: var(--demanda); }
+.corba-eq.oferta { border-left-color: var(--oferta); }
+
+.resum { display: none; }
+@media (max-width: 880px) {
+  .resum {
+    display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 6px; padding: 8px 10px;
+    border-radius: 8px; background: var(--fons); font-size: .9rem;
+  }
+  .resum .demanda strong { color: var(--demanda); }
+  .resum .oferta strong { color: var(--oferta); }
+  .resum small { color: var(--suau); }
+  .resum .eq-resum { color: var(--equilibri); font-weight: 700; }
+}
+
+.equacions .eq { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; margin: 2px 0; }
+.equacions .expr { font-family: "Cambria Math", "STIX Two Math", Georgia, serif; font-size: 1.25rem; white-space: nowrap; }
+.equacions .cond { color: var(--suau); font-size: .9rem; }
+.equacions .inversa { margin-top: 6px; color: var(--suau); font-size: .9rem; }
+.equacions .inversa .expr { font-size: 1rem; color: var(--text); }
+.equacions .nota { margin-top: 6px; font-size: .9rem; color: var(--suau); }
+
+.dades-corba { margin-top: 12px; }
+.dades-corba h3 { font-size: .95rem; margin-bottom: .3em; }
+.punts { display: grid; gap: 6px; }
+.punt { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
+.nom-punt { font-weight: 700; min-width: 2em; }
+.dades input[type="number"] {
+  font: inherit; width: 5.5em; padding: 4px 6px; border-radius: 6px;
+  border: 1px solid var(--vora); background: var(--targeta); color: var(--text);
+}
+.dades input:disabled { opacity: .4; }
+.limit { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--vora); font-size: .92rem; }

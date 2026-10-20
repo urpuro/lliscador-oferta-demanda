@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="ca">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Oferta i demanda · Lliscador</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="css/estil.css?v=20261020">
+</head>
+<body>
+  <header class="capcalera">
+    <h1>Oferta i demanda</h1>
+    <nav class="pestanyes" aria-label="Apartats">
+      <a href="#/explora" id="pestanya-explora">Explora</a>
+      <a href="#/practica" id="pestanya-practica">Practica</a>
+    </nav>
+  </header>
+
+  <main>
+    <section id="explora" class="apartat">
+      <div class="targeta cas">
+        <label class="tria-cas">
+          <span>Cas</span>
+          <select id="cas"></select>
+        </label>
+        <p id="context" class="context"></p>
+        <p id="observa" class="observa"></p>
+      </div>
+
+      <div class="graella-explora">
+        <div class="targeta grafic-cont">
+          <svg id="grafic" class="grafic" aria-label="Gràfic de l'oferta i la demanda"></svg>
+          <div id="resum" class="resum" aria-hidden="true"></div>
+          <div class="sota-grafic">
+            <p class="ajuda">Arrossega els punts per canviar la inclinació, o la corba sencera per desplaçar-la. Els rombes marquen on s'esgota l'oferta o la demanda.</p>
+            <div class="accions">
+              <label class="interruptor"><input type="checkbox" id="mostra-preu"> Prova un preu</label>
+              <button class="boto" id="restableix" type="button">Restableix el cas</button>
+            </div>
+          </div>
+        </div>
+
+        <aside class="panell">
+          <div class="targeta equacions-panell">
+            <div class="corba-eq demanda">
+              <h2>Demanda (D)</h2>
+              <div class="equacions" id="eq-demanda"></div>
+            </div>
+            <div class="corba-eq oferta">
+              <h2>Oferta (O)</h2>
+              <div class="equacions" id="eq-oferta"></div>
+            </div>
+          </div>
+
+          <div class="targeta resultat">
+            <h2>Equilibri</h2>
+            <div id="equilibri"></div>
+            <div id="avisos"></div>
+            <details id="passos-cont" class="passos">
+              <summary>Com es calcula?</summary>
+              <ol id="passos"></ol>
+            </details>
+          </div>
+
+          <div class="targeta" id="analisi-preu" hidden></div>
+
+          <div class="targeta dades">
+            <h2>Punts i esgotament</h2>
+            <p class="ajuda">També pots escriure les coordenades dels punts i el límit on s'esgota cada corba.</p>
+            <div class="dades-corba demanda" id="dades-demanda"></div>
+            <div class="dades-corba oferta" id="dades-oferta"></div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section id="practica" class="apartat" hidden>
+      <div class="targeta">
+        <h2>Practica</h2>
+        <p>Aquest apartat està en construcció. Aquí hauràs de trobar les funcions d'oferta i demanda a partir de punts o d'un enunciat, i calcular el preu i la quantitat d'equilibri.</p>
+        <p><a class="boto primari" href="#/explora">Torna a l'exploració</a></p>
+      </div>
+    </section>
+  </main>
+
+  <script src="js/motor.js?v=20261020"></script>
+  <script src="js/casos.js?v=20261020"></script>
+  <script src="js/grafic.js?v=20261020"></script>
+  <script src="js/app.js?v=20261020"></script>
+</body>
+</html>
