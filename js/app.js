@@ -14,8 +14,7 @@
     oferta: null,
     preu: { visible: false, valor: 60 },
   };
-  let arrossegant = null; // {id, inici: {q, p}, abans: {demanda, oferta}}
-  let enfocat = null;     // data-arrossega de la nansa amb el focus
+  let editor = null;
 
   /* ---------- Utilitats ---------- */
 
@@ -58,107 +57,6 @@
     $('context').textContent = c.context;
     $('observa').textContent = c.observa;
     construeixPanellsCorbes();
-    actualitza();
-  }
-
-  /* ---------- Modificacions de l'estat ---------- */
-
-  // Mou un punt d'una corba, sense deixar-lo sortir del gràfic ni sobre l'altre punt.
-  function mouPunt(tipus, k, q, p) {
-    const c = cas();
-    const corba = estat[tipus];
-    q = limita(ajusta(q, c.pas), 0, c.qMax);
-    p = limita(ajusta(p, c.pas), 0, c.pMax);
-    const altre = corba[k === 'a' ? 'b' : 'a'];
-    if (altre.q === q && altre.p === p) return;
-    corba[k] = { q, p };
-  }
-
-  // Desplaça la corba sencera (els dos punts i el límit).
-  function desplacaCorba(tipus, base, dq, dp) {
-    const c = cas();
-    dq = ajusta(dq, c.pas); dp = ajusta(dp, c.pas);
-    const qs = [base.a.q, base.b.q], ps = [base.a.p, base.b.p];
-    if (base.limit != null) qs.push(base.limit);
-    dq = limita(dq, -Math.min(...qs), c.qMax - Math.max(...qs));
-    dp = limita(dp, -Math.min(...ps), c.pMax - Math.max(...ps));
-    const corba = estat[tipus];
-    corba.a = { q: base.a.q + dq, p: base.a.p + dp };
-    corba.b = { q: base.b.q + dq, p: base.b.p + dp };
-    if (base.limit != null) corba.limit = base.limit + dq;
-  }
-
-  function mouLimit(tipus, q) {
-    const c = cas();
-    estat[tipus].limit = limita(ajusta(q, c.pas), 0, c.qMax);
-  }
-
-  function mouPreu(p) {
-    const c = cas();
-    estat.preu.valor = limita(ajusta(p, c.pas), 0, c.pMax);
-  }
-
-  /* ---------- Arrossegar ---------- */
-
-  function iniciaArrossegament(ev) {
-    const objectiu = ev.target.closest('[data-arrossega]');
-    if (!objectiu) return;
-    ev.preventDefault();
-    const svg = $('grafic');
-    arrossegant = {
-      id: objectiu.getAttribute('data-arrossega'),
-      inici: Grafic.coordenades(svg, ev, cas()),
-      abans: { demanda: copia(estat.demanda), oferta: copia(estat.oferta) },
-    };
-    enfocat = arrossegant.id.endsWith('.corba') ? null : arrossegant.id;
-    svg.setPointerCapture(ev.pointerId);
-    svg.classList.add('arrossegant');
-  }
-
-  function arrossega(ev) {
-    if (!arrossegant) return;
-    const svg = $('grafic');
-    const pos = Grafic.coordenades(svg, ev, cas());
-    aplica(arrossegant.id, pos, arrossegant);
-    actualitza();
-  }
-
-  function acabaArrossegament() {
-    if (!arrossegant) return;
-    arrossegant = null;
-    $('grafic').classList.remove('arrossegant');
-    actualitza();
-  }
-
-  // Aplica el moviment de l'element «id» fins a la posició «pos».
-  function aplica(id, pos, ctx) {
-    if (id === 'preu') return mouPreu(pos.p);
-    const [tipus, part] = id.split('.');
-    if (part === 'a' || part === 'b') return mouPunt(tipus, part, pos.q, pos.p);
-    if (part === 'limit') return mouLimit(tipus, pos.q);
-    if (part === 'corba') return desplacaCorba(tipus, ctx.abans[tipus], pos.q - ctx.inici.q, pos.p - ctx.inici.p);
-  }
-
-  /* ---------- Teclat ---------- */
-
-  function teclat(ev) {
-    const objectiu = ev.target.closest('[data-arrossega]');
-    if (!objectiu) return;
-    const fletxes = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, 1], ArrowDown: [0, -1] };
-    const d = fletxes[ev.key];
-    if (!d) return;
-    ev.preventDefault();
-    const id = objectiu.getAttribute('data-arrossega');
-    const pas = cas().pas * (ev.shiftKey ? 10 : 1);
-    const [dq, dp] = [d[0] * pas, d[1] * pas];
-    if (id === 'preu') mouPreu(estat.preu.valor + dp);
-    else {
-      const [tipus, part] = id.split('.');
-      const corba = estat[tipus];
-      if (part === 'a' || part === 'b') mouPunt(tipus, part, corba[part].q + dq, corba[part].p + dp);
-      else if (part === 'limit') mouLimit(tipus, corba.limit + dq);
-    }
-    enfocat = id;
     actualitza();
   }
 
@@ -366,10 +264,7 @@
     $('eq-oferta').innerHTML = htmlEquacions(estat.oferta);
     actualitzaCamps();
     mostraResum(eq);
-    if (enfocat) {
-      const n = $('grafic').querySelector(`[data-arrossega="${enfocat}"]`);
-      if (n) n.focus({ preventScroll: true });
-    }
+    editor.restauraFocus();
   }
 
   /* ---------- Navegació ---------- */
@@ -381,6 +276,7 @@
     $('practica').hidden = apartat !== 'practica';
     $('pestanya-explora').toggleAttribute('aria-current', apartat === 'explora');
     $('pestanya-practica').toggleAttribute('aria-current', apartat === 'practica');
+    if (apartat === 'practica') Practica.mostra(parts.slice(1));
     if (apartat === 'explora') {
       const id = parts[1] && CASOS.some(c => c.id === parts[1]) ? parts[1] : (estat.cas ? estat.cas.id : CASOS[0].id);
       if (!estat.cas || estat.cas.id !== id) carregaCas(id);
@@ -391,15 +287,7 @@
 
   function inicia() {
     omplSelector();
-    const svg = $('grafic');
-    svg.addEventListener('pointerdown', iniciaArrossegament);
-    svg.addEventListener('pointermove', arrossega);
-    svg.addEventListener('pointerup', acabaArrossegament);
-    svg.addEventListener('pointercancel', acabaArrossegament);
-    svg.addEventListener('keydown', teclat);
-    svg.addEventListener('focusout', ev => {
-      if (!arrossegant && !svg.contains(ev.relatedTarget)) enfocat = null;
-    });
+    editor = Editor.crea($('grafic'), { estat: () => estat, eixos: cas, enCanvi: actualitza });
 
     $('cas').addEventListener('change', ev => { location.hash = `#/explora/${ev.target.value}`; });
     $('restableix').addEventListener('click', () => carregaCas(estat.cas.id));

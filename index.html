@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Oferta i demanda · Lliscador</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="css/estil.css?v=20261020">
+  <link rel="stylesheet" href="css/estil.css?v=20261020a">
 </head>
 <body>
   <header class="capcalera">
@@ -75,17 +75,57 @@
     </section>
 
     <section id="practica" class="apartat" hidden>
-      <div class="targeta">
-        <h2>Practica</h2>
-        <p>Aquest apartat està en construcció. Aquí hauràs de trobar les funcions d'oferta i demanda a partir de punts o d'un enunciat, i calcular el preu i la quantitat d'equilibri.</p>
-        <p><a class="boto primari" href="#/explora">Torna a l'exploració</a></p>
+      <div id="practica-inici">
+        <div class="targeta">
+          <h2>Practica</h2>
+          <p>Tria un tipus d'exercici. Cada vegada que en demanis un de nou, sortiran funcions i números diferents. Pots comprovar les respostes, demanar una pista o mirar la solució.</p>
+        </div>
+        <div class="targetes-tipus" id="llista-tipus"></div>
+        <div class="targeta examen-targeta">
+          <div>
+            <h2>Simulacre d'examen</h2>
+            <p>Un exercici de cada tipus, sense pistes ni correcció fins al final. En acabar, tindràs la nota i podràs revisar cada exercici amb la solució.</p>
+          </div>
+          <div class="ex-accions">
+            <a class="boto primari" href="#/practica/examen" id="boto-examen">Comença el simulacre</a>
+            <button class="boto" type="button" id="boto-examen-nou" hidden>Nou simulacre</button>
+          </div>
+        </div>
       </div>
+
+      <div id="practica-exercici" hidden>
+        <div class="cap-exercici">
+          <a href="#/practica" id="ex-enrere" class="enrere">← Tots els exercicis</a>
+          <span id="ex-progres" class="progres"></span>
+        </div>
+        <div id="ex-punts-examen" class="punts-examen" hidden></div>
+        <div class="targeta exercici">
+          <h2 id="ex-titol" tabindex="-1"></h2>
+          <div id="ex-graella" class="graella-ex">
+            <div class="ex-text">
+              <div id="ex-enunciat" class="enunciat"></div>
+              <form id="ex-camps" class="camps" autocomplete="off" novalidate></form>
+              <div id="ex-retorn" aria-live="polite"></div>
+            </div>
+            <div id="ex-grafic-cont" class="ex-grafic" hidden>
+              <svg id="grafic-practica" class="grafic" aria-label="Gràfic de l'exercici"></svg>
+              <p id="ex-ajuda-grafic" class="ajuda"></p>
+            </div>
+          </div>
+          <div id="ex-accions" class="ex-accions"></div>
+        </div>
+      </div>
+
+      <div id="practica-resultat" hidden></div>
     </section>
   </main>
 
-  <script src="js/motor.js?v=20261020"></script>
-  <script src="js/casos.js?v=20261020"></script>
-  <script src="js/grafic.js?v=20261020"></script>
-  <script src="js/app.js?v=20261020"></script>
+  <script src="js/motor.js?v=20261020a"></script>
+  <script src="js/casos.js?v=20261020a"></script>
+  <script src="js/grafic.js?v=20261020a"></script>
+  <script src="js/editor.js?v=20261020a"></script>
+  <script src="js/exercicis.js?v=20261020a"></script>
+  <script src="js/practica.js?v=20261020a"></script>
+  <script src="js/app.js?v=20261020a"></script>
 </body>
 </html>

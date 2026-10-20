@@ -220,3 +220,107 @@ a.boto { display: inline-block; text-decoration: none; }
 }
 .dades input:disabled { opacity: .4; }
 .limit { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--vora); font-size: .92rem; }
+
+/* ---------- Pràctica ---------- */
+
+.targetes-tipus { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.tipus-ex {
+  display: flex; flex-direction: column; gap: 4px; margin: 0; text-decoration: none; color: var(--text);
+  transition: border-color .15s, transform .15s;
+}
+.tipus-ex:hover { border-color: var(--primari); transform: translateY(-1px); }
+.tipus-ex span { color: var(--suau); font-size: .92rem; }
+.tipus-ex .num-tipus {
+  display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 50%;
+  background: var(--demanda-fons); color: var(--primari); font-weight: 700; font-size: .9rem;
+}
+.tipus-ex .progres-tipus { margin-top: auto; padding-top: 6px; color: var(--equilibri); font-weight: 600; font-size: .85rem; }
+.examen-targeta { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; border-left: 5px solid var(--preu); }
+.examen-targeta > div:first-child { flex: 1 1 320px; }
+.examen-targeta p { margin: 0; }
+
+.cap-exercici { display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.enrere { color: var(--primari); text-decoration: none; font-weight: 600; }
+.enrere:hover { text-decoration: underline; }
+.progres { color: var(--suau); font-size: .92rem; }
+
+.punts-examen { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.punt-examen {
+  font: inherit; width: 36px; height: 36px; border-radius: 50%; border: 2px solid var(--vora);
+  background: var(--targeta); color: var(--text); cursor: pointer; font-weight: 600;
+}
+.punt-examen.respost { background: var(--demanda-fons); border-color: var(--demanda); }
+.punt-examen.correcte { background: var(--equilibri-fons); border-color: var(--equilibri); }
+.punt-examen.parcial { background: var(--avis-fons); border-color: #c99a06; }
+.punt-examen.incorrecte { background: var(--alerta-fons); border-color: var(--alerta); }
+.punt-examen[aria-current] { outline: 3px solid var(--primari); outline-offset: 2px; }
+
+.exercici h2 { font-size: 1.2rem; }
+.exercici h2:focus { outline: none; }
+.graella-ex { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+.graella-ex.amb-grafic { grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); align-items: start; }
+@media (max-width: 880px) {
+  .graella-ex.amb-grafic { grid-template-columns: minmax(0, 1fr); }
+}
+.ex-grafic .ajuda { margin: 4px 0 0; }
+
+.enunciat p { margin: 0 0 8px; }
+.enunciat .formula {
+  font-family: "Cambria Math", "STIX Two Math", Georgia, serif; font-size: 1.3rem;
+  margin: 4px 0 10px; padding: 4px 12px; border-left: 3px solid var(--vora);
+}
+
+.camps { display: grid; gap: 10px; margin: 14px 0; }
+.camps.en-linia { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.camp { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
+.camps:not(.en-linia) .camp .etiqueta { flex: 0 1 auto; }
+.camp .etiqueta { font-weight: 600; }
+.camp input, .camp select {
+  font: inherit; padding: 6px 8px; border-radius: 8px; border: 2px solid var(--vora);
+  background: var(--targeta); color: var(--text);
+}
+.camp input { width: 6.5em; }
+.camp select { max-width: 100%; }
+.camp input:focus, .camp select:focus { border-color: var(--primari); outline: none; }
+.camp.correcte input, .camp.correcte select { border-color: var(--equilibri); background: var(--equilibri-fons); }
+.camp.incorrecte input, .camp.incorrecte select { border-color: var(--alerta); background: var(--alerta-fons); }
+.camp .icona { font-weight: 700; }
+.camp.correcte .icona { color: var(--equilibri); }
+.camp.incorrecte .icona { color: var(--alerta); }
+.camp .valor-correcte { color: var(--equilibri); font-weight: 600; font-size: .92rem; }
+.camp .sufix { color: var(--suau); }
+.camps.en-linia .sufix { color: var(--text); font-weight: 600; }
+
+.missatge.correcte { background: var(--equilibri-fons); color: var(--equilibri); font-weight: 600; }
+.missatge.incorrecte { background: var(--alerta-fons); }
+.missatge.pista { background: var(--avis-fons); }
+.solucio { margin-top: 12px; padding: 10px 14px; border-radius: 8px; background: var(--fons); }
+.solucio h3 { margin: 0 0 4px; font-size: 1rem; }
+.solucio ol { margin: 0; padding-left: 1.4em; }
+.solucio li { margin: 3px 0; }
+
+.ex-accions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.boto:disabled { opacity: .4; cursor: default; }
+
+.grafic .punt-fix { stroke: var(--targeta); stroke-width: 2; }
+.grafic .punt-fix.demanda { fill: var(--demanda); }
+.grafic .punt-fix.oferta { fill: var(--oferta); }
+.grafic .corba.abans .traç { stroke-width: 2.5; stroke-dasharray: 7 6; opacity: .55; }
+.grafic .etiqueta-corba.abans { opacity: .6; }
+
+.resultat-examen .nota { display: flex; align-items: baseline; gap: 6px; margin: 8px 0; }
+.resultat-examen .nota strong { font-size: 3rem; line-height: 1; color: var(--primari); }
+.resultat-examen .nota span { color: var(--suau); font-size: 1.2rem; }
+.llista-resultat { list-style: none; margin: 12px 0 0; padding: 0; counter-reset: res; }
+.llista-resultat li {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 8px 10px;
+  border-radius: 8px; margin-bottom: 6px; counter-increment: res;
+}
+.llista-resultat li::before { content: counter(res) '.'; font-weight: 700; color: var(--suau); }
+.llista-resultat li.correcte { background: var(--equilibri-fons); }
+.llista-resultat li.parcial { background: var(--avis-fons); }
+.llista-resultat li.incorrecte { background: var(--alerta-fons); }
+.llista-resultat .titol-res { flex: 1 1 200px; font-weight: 600; }
+.llista-resultat .punts-res { color: var(--suau); }
+.grafic .guia.abans { opacity: .45; }
+.grafic .punt-eq.abans { fill: var(--targeta); stroke: var(--equilibri); stroke-width: 2.5; }

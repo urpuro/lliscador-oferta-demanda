@@ -114,19 +114,28 @@
     return n;
   }
 
-  // Dibuixa tot el gràfic. model = {eixos, demanda, oferta, eq, preu, arrossegant}
+  // Dibuixa tot el gràfic.
+  //  model = {eixos, demanda, oferta, eq, preu,
+  //           editables:   corbes amb nanses (per defecte, totes dues),
+  //           marcaPunts:  marca els punts de les corbes no editables,
+  //           coordenades: escriu les coordenades al costat dels punts,
+  //           fantasmes:   corbes «d'abans» que es dibuixen en discontinu,
+  //           eqAbans:     equilibri d'abans d'un desplaçament}
+  // Una corba pot ser null (no es dibuixa).
   function dibuixa(svg, model) {
     const { eixos, demanda, oferta, eq, preu } = model;
+    const editables = model.editables || ['demanda', 'oferta'];
     const e = escala(eixos);
+    const idClip = `${svg.id || 'grafic'}-zona`;
     svg.setAttribute('viewBox', `0 0 ${AMPLE} ${ALT}`);
     svg.textContent = '';
 
     const defs = el('defs', {}, svg);
-    const clip = el('clipPath', { id: 'zona-grafic' }, defs);
+    const clip = el('clipPath', { id: idClip }, defs);
     el('rect', { x: MARGE.e, y: MARGE.s, width: W, height: H }, clip);
 
     dibuixaEixos(el('g', {}, svg), e, eixos);
-    const zona = el('g', { 'clip-path': 'url(#zona-grafic)' }, svg);
+    const zona = el('g', { 'clip-path': `url(#${idClip})` }, svg);
 
     // Línia de preu (excés d'oferta o de demanda).
     if (preu && preu.visible) {
@@ -143,8 +152,16 @@
       }
     }
 
+    // Corbes d'abans (desplaçaments).
+    for (const f of model.fantasmes || []) {
+      const gc = el('g', { class: `corba ${f.tipus} abans` }, zona);
+      el('path', { d: camiDe(trams(Motor.peces(f), eixos), e), class: 'traç' }, gc);
+      const fi = ultimVisible(trams(Motor.peces(f), eixos), eixos);
+      if (fi) el('text', { x: Math.min(e.x(fi.q) + 8, MARGE.e + W - 22), y: Math.max(e.y(fi.p) + (f.tipus === 'oferta' ? 16 : -6), MARGE.s + 14), class: `etiqueta-corba ${f.tipus} abans` }, zona, `${f.tipus === 'demanda' ? 'D' : 'O'}₀`);
+    }
+
     // Corbes.
-    const corbes = [['demanda', demanda, 'D'], ['oferta', oferta, 'O']];
+    const corbes = [['demanda', demanda, 'D'], ['oferta', oferta, 'O']].filter(([, c]) => c);
     for (const [tipus, corba, lletra] of corbes) {
       const t = trams(Motor.peces(corba), eixos);
       const d = camiDe(t, e);
@@ -155,17 +172,24 @@
         el('path', { d: camiDe(base, e), class: 'fantasma' }, gc);
       }
       el('path', { d, class: 'traç' }, gc);
-      el('path', { d, class: 'toc', 'data-arrossega': `${tipus}.corba` }, gc);
+      if (editables.includes(tipus)) el('path', { d, class: 'toc', 'data-arrossega': `${tipus}.corba` }, gc);
       const fi = ultimVisible(t, eixos);
       if (fi) {
-        const x = Math.min(e.x(fi.q) + 8, MARGE.e + W - 14);
+        const x = Math.min(e.x(fi.q) + 8, MARGE.e + W - 22);
         const y = Math.max(e.y(fi.p) + (tipus === 'oferta' ? 16 : -6), MARGE.s + 14);
-        el('text', { x, y, class: `etiqueta-corba ${tipus}` }, zona, lletra);
+        el('text', { x, y, class: `etiqueta-corba ${tipus}` }, zona, (model.fantasmes || []).some(f => f.tipus === tipus) ? `${lletra}₁` : lletra);
       }
     }
 
     // Equilibri.
     const geq = el('g', { class: 'equilibri' }, svg);
+    const ab = model.eqAbans;
+    if (ab && ab.tipus === 'punt' && ab.q <= eixos.qMax && ab.p <= eixos.pMax) {
+      const x = e.x(ab.q), y = e.y(ab.p);
+      el('line', { x1: x, y1: y, x2: x, y2: e.y(0), class: 'guia abans' }, geq);
+      el('line', { x1: x, y1: y, x2: e.x(0), y2: y, class: 'guia abans' }, geq);
+      el('circle', { cx: x, cy: y, r: 6, class: 'punt-eq abans' }, geq);
+    }
     if (eq && eq.tipus === 'punt') {
       const x = e.x(eq.q), y = e.y(eq.p);
       if (eq.q <= eixos.qMax && eq.p <= eixos.pMax) {
@@ -178,18 +202,29 @@
     } else if (eq && eq.tipus === 'indeterminat') {
       const [a, b] = eq.segment;
       const pb = Math.min(b.p, eixos.pMax * 4), qb = Math.min(b.q, eixos.qMax * 4);
-      el('line', { x1: e.x(a.q), y1: e.y(a.p), x2: e.x(qb), y2: e.y(pb), class: 'tram-eq', 'clip-path': 'url(#zona-grafic)' }, geq);
+      el('line', { x1: e.x(a.q), y1: e.y(a.p), x2: e.x(qb), y2: e.y(pb), class: 'tram-eq', 'clip-path': `url(#${idClip})` }, geq);
     } else if (eq && eq.tipus === 'multiples') {
       for (const pt of eq.punts) el('circle', { cx: e.x(pt.q), cy: e.y(pt.p), r: 6, class: 'punt-eq' }, geq);
     }
 
     // Nanses: punts de cada corba, límits d'esgotament i línia de preu.
     const gn = el('g', { class: 'nanses' }, svg);
+    const textPunt = (nom, pt) => (model.coordenades ? `${nom} (${Motor.num(pt.q)}, ${Motor.num(pt.p)})` : nom);
     for (const [tipus, corba, lletra] of corbes) {
       const deLa = tipus === 'demanda' ? 'de la demanda' : 'de l\'oferta';
+      if (!editables.includes(tipus)) {
+        if (model.marcaPunts) {
+          for (const [k, i] of [['a', 1], ['b', 2]]) {
+            const pt = corba[k], x = e.x(pt.q), y = e.y(pt.p);
+            el('circle', { cx: x, cy: y, r: 5, class: `punt-fix ${tipus}` }, gn);
+            el('text', { x: x + 8, y: y - 8, class: 'etiqueta-nansa' }, gn, textPunt(`${lletra}${i}`, pt));
+          }
+        }
+        continue;
+      }
       for (const [k, i] of [['a', 1], ['b', 2]]) {
         const pt = corba[k];
-        nansa(gn, `${tipus}.${k}`, e.x(pt.q), e.y(pt.p), tipus, `${lletra}${i}`,
+        nansa(gn, `${tipus}.${k}`, e.x(pt.q), e.y(pt.p), tipus, textPunt(`${lletra}${i}`, pt),
           `Punt ${i} ${deLa}: Q = ${Motor.num(pt.q)}, P = ${Motor.num(pt.p)}. Mou-lo amb les fletxes.`);
       }
       const r = Motor.recta(corba.a, corba.b);

@@ -271,6 +271,12 @@
     return (isFinite(x) && Math.abs(Math.round(x * f) / f - x) > 1e-9 ? '≈ ' : '') + num(x, decimals);
   }
 
+  // «= 50» o «≈ 53,92», segons si cal arrodonir.
+  function igual(x, decimals = 2) {
+    const a = aprox(x, decimals);
+    return a.startsWith('≈') ? a : `= ${a}`;
+  }
+
   function terme(coef, v) {
     const a = Math.abs(coef);
     return (Math.abs(a - 1) < 1e-9 ? '' : num(a)) + v;
@@ -360,8 +366,8 @@
       lin.push('A l\'equilibri, la quantitat demandada és igual a la quantitat oferta: Qd = Qs.');
       lin.push(`${expressio(D.a, D.b, 'P')} = ${expressio(S.a, S.b, 'P')}`);
       lin.push(`Agrupem: ${num(D.a - S.a)} = ${expressio(0, S.b - D.b, 'P')}`);
-      lin.push(`P* = ${num(D.a - S.a)} / ${num(S.b - D.b)} = ${aprox(eq.p)}`);
-      lin.push(`Q* = ${substitucio(D.a, D.b, eq.p)} = ${aprox(eq.q)}`);
+      lin.push(`P* = ${num(D.a - S.a)} / ${num(S.b - D.b)} ${igual(eq.p)}`);
+      lin.push(`Q* = ${substitucio(D.a, D.b, eq.p)} ${igual(eq.q)}`);
       return lin;
     }
 
@@ -374,12 +380,12 @@
       const motiu = pc.esgotament
         ? (nom === 'oferta' ? 'l\'oferta està esgotada: no es pot oferir més' : 'la demanda està esgotada (saturada): no se\'n demana més')
         : `${laCorba[nom]} és vertical (perfectament inelàstica)`;
-      lin.push(`A l'equilibri, ${motiu}. La quantitat queda fixada: Q* = ${aprox(pc.q)}.`);
+      lin.push(`A l'equilibri, ${motiu}. La quantitat queda fixada: Q* ${igual(pc.q)}.`);
       if (altra.forma === 'lineal') {
         lin.push(`El preu el determina ${laCorba[altreNom]}: P = ${expressio(altra.n, altra.m, 'Q')}`);
-        lin.push(`P* = ${substitucio(altra.n, altra.m, pc.q)} = ${aprox(eq.p)}`);
+        lin.push(`P* = ${substitucio(altra.n, altra.m, pc.q)} ${igual(eq.p)}`);
       } else if (altra.forma === 'horitzontal') {
-        lin.push(`El preu el fixa ${laCorba[altreNom]}, que és horitzontal: P* = ${aprox(eq.p)}.`);
+        lin.push(`El preu el fixa ${laCorba[altreNom]}, que és horitzontal: P* ${igual(eq.p)}.`);
       }
       return lin;
     }
@@ -387,12 +393,12 @@
     if (horitz) {
       const [nom, pc] = horitz;
       const [altreNom, altra] = nom === 'demanda' ? ['oferta', o] : ['demanda', d];
-      lin.push(`${majuscula(laCorba[nom])} és horitzontal (perfectament elàstica): el preu queda fixat, P* = ${aprox(pc.p)}.`);
+      lin.push(`${majuscula(laCorba[nom])} és horitzontal (perfectament elàstica): el preu queda fixat, P* ${igual(pc.p)}.`);
       if (altra.forma === 'lineal') {
         const A = directa(altra);
         const Qn = altreNom === 'demanda' ? 'Qd' : 'Qs';
         lin.push(`La quantitat la determina ${laCorba[altreNom]}: ${Qn} = ${expressio(A.a, A.b, 'P')}`);
-        lin.push(`Q* = ${substitucio(A.a, A.b, pc.p)} = ${aprox(eq.q)}`);
+        lin.push(`Q* = ${substitucio(A.a, A.b, pc.p)} ${igual(eq.q)}`);
       }
       return lin;
     }
@@ -401,7 +407,7 @@
 
   const Motor = {
     recta, peces, equilibri, quantitatA, elasticitat, classificaElasticitat,
-    equacions, passos, num, aprox, expressio, preuMaximDemanda, preuMinimOferta,
+    equacions, passos, num, aprox, igual, expressio, preuMaximDemanda, preuMinimOferta,
   };
 
   if (typeof module !== 'undefined' && module.exports) module.exports = Motor;
