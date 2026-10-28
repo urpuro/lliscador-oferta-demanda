@@ -57,6 +57,12 @@
       estat()[tipus].limit = limita(ajusta(q, c.pas), 0, c.qMax);
     }
 
+    // Preu màxim o mínim (es mou la línia) o impost (es mou la corba O + t).
+    function mouIntervencio(nou) {
+      const c = eixos();
+      estat().intervencio.valor = limita(ajusta(nou, c.pas), 0, c.pMax);
+    }
+
     function mouPreu(p) {
       const c = eixos();
       estat().preu.valor = limita(ajusta(p, c.pas), 0, c.pMax);
@@ -65,6 +71,10 @@
     // Aplica el moviment de l'element «id» fins a la posició «pos».
     function aplica(id, pos, ctx) {
       if (id === 'preu') return mouPreu(pos.p);
+      if (id === 'intervencio') {
+        const iv = estat().intervencio;
+        return mouIntervencio(iv.tipus === 'impost' ? ctx.abans.intervencio.valor + pos.p - ctx.inici.p : pos.p);
+      }
       const [tipus, part] = id.split('.');
       if (part === 'a' || part === 'b') return mouPunt(tipus, part, pos.q, pos.p);
       if (part === 'limit') return mouLimit(tipus, pos.q);
@@ -81,7 +91,7 @@
       arrossegant = {
         id,
         inici: Grafic.coordenades(svg, ev, eixos()),
-        abans: { demanda: copia(e.demanda), oferta: copia(e.oferta) },
+        abans: { demanda: copia(e.demanda), oferta: copia(e.oferta), intervencio: copia(e.intervencio || null) },
       };
       enfocat = id.endsWith('.corba') ? null : id;
       svg.setPointerCapture(ev.pointerId);
@@ -116,6 +126,7 @@
       const [dq, dp] = [d[0] * pas, d[1] * pas];
       const e = estat();
       if (id === 'preu') mouPreu(e.preu.valor + dp);
+      else if (id === 'intervencio') mouIntervencio(e.intervencio.valor + dp);
       else {
         const [tipus, part] = id.split('.');
         const corba = e[tipus];

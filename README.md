@@ -10,7 +10,8 @@ Aplicació web interactiva per entendre l'**oferta**, la **demanda** i el **preu
   - Una corba pot tenir un **esgotament**: l'oferta, a partir de la capacitat màxima, es torna vertical cap a l'infinit; la demanda, a partir de la saturació, es torna vertical fins a preu zero. El rombe del gràfic marca on passa.
   - En tot moment es veuen les **equacions** de les dues corbes (forma directa i inversa, per trams si cal), el **preu i la quantitat d'equilibri**, les **elasticitats** a l'equilibri i, si es vol, els passos del càlcul.
   - *Prova un preu*: una línia de preu que es pot arrossegar per veure l'excés de demanda o d'oferta.
-- **Practica**: vuit tipus d'exercicis, generats a l'atzar (cada exercici nou té funcions i números diferents):
+  - *Excedents i intervenció*: mostra l'excedent del consumidor (EC) i del productor (EP) com a àrees del gràfic, i permet fixar un **preu màxim**, un **preu mínim** o un **impost per unitat** (arrossegant la línia de preu o la corba O + t). Una taula compara el mercat lliure amb la intervenció: quantitat, preus, EC, EP, recaptació, benestar total i pèrdua irrecuperable d'eficiència (PI).
+- **Practica**: onze tipus d'exercicis, generats a l'atzar (cada exercici nou té funcions i números diferents):
   1. *Funció a partir de dos punts*: escriure l'equació (forma directa o inversa) a partir d'un enunciat o del gràfic.
   2. *Dibuixa les corbes*: moure els punts del gràfic fins que les corbes representin unes funcions donades.
   3. *Calcula l'equilibri*: trobar P* i Q* a partir de les funcions.
@@ -19,8 +20,16 @@ Aplicació web interactiva per entendre l'**oferta**, la **demanda** i el **preu
   6. *Preu fora de l'equilibri*: calcular Qd, Qs, l'excés de demanda o d'oferta i cap on anirà el preu.
   7. *Equilibri amb esgotament*: equilibri amb capacitat màxima de l'oferta o amb la demanda esgotada.
   8. *Elasticitat a l'equilibri*: calcular-la i classificar-la.
+  9. *Excedents a l'equilibri*: calcular EC i EP.
+  10. *Preu màxim o mínim*: quantitat intercanviada, escassetat o excedent de producte, EC, EP i PI.
+  11. *Impost per unitat*: nova quantitat, preu que paguen els compradors i que reben els venedors, recaptació i PI.
 
   Cada exercici es pot comprovar, demanar-ne una pista o veure'n la solució pas a pas (amb el gràfic). També hi ha un **simulacre d'examen** amb un exercici de cada tipus, sense ajudes, que en acabar dona la nota i permet revisar cada exercici.
+
+## Convencions
+
+- Les rectes s'escriuen amb el pendent davant: Q = a·P + b o P = a·Q + b, on **a** és el pendent i **b** el terme independent.
+- Als gràfics, la quantitat (Q) va a l'eix horitzontal i el preu (P) al vertical.
 
 ## Estructura
 

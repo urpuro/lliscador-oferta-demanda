@@ -120,7 +120,9 @@
   //           marcaPunts:  marca els punts de les corbes no editables,
   //           coordenades: escriu les coordenades al costat dels punts,
   //           fantasmes:   corbes «d'abans» que es dibuixen en discontinu,
-  //           eqAbans:     equilibri d'abans d'un desplaçament}
+  //           eqAbans:     equilibri d'abans d'un desplaçament o d'una intervenció,
+  //           excedents:   resultat de Motor.excedents (àrees i intervenció),
+  //           mouIntervencio: la línia de preu o l'impost es poden arrossegar}
   // Una corba pot ser null (no es dibuixa).
   function dibuixa(svg, model) {
     const { eixos, demanda, oferta, eq, preu } = model;
@@ -136,6 +138,19 @@
 
     dibuixaEixos(el('g', {}, svg), e, eixos);
     const zona = el('g', { 'clip-path': `url(#${idClip})` }, svg);
+
+    // Àrees dels excedents.
+    const exc = model.excedents && model.excedents.calculable ? model.excedents : null;
+    if (exc) {
+      const ga = el('g', { class: 'arees' }, zona);
+      const valors = { EC: exc.EC, EP: exc.EP, PI: exc.PI, R: exc.recaptacio };
+      for (const [nom, pts] of Object.entries(exc.poligons)) {
+        if (pts.length < 3 || !(valors[nom] > 1e-6)) continue;
+        el('polygon', { points: pts.map(pt => `${e.x(pt.q).toFixed(2)},${e.y(pt.p).toFixed(2)}`).join(' '), class: `area area-${nom}` }, ga);
+        const cq = pts.reduce((s, pt) => s + pt.q, 0) / pts.length, cp = pts.reduce((s, pt) => s + pt.p, 0) / pts.length;
+        el('text', { x: e.x(cq), y: e.y(cp) + 4, class: `etiqueta-area area-${nom}`, 'text-anchor': 'middle' }, ga, nom);
+      }
+    }
 
     // Línia de preu (excés d'oferta o de demanda).
     if (preu && preu.visible) {
@@ -178,6 +193,37 @@
         const x = Math.min(e.x(fi.q) + 8, MARGE.e + W - 22);
         const y = Math.max(e.y(fi.p) + (tipus === 'oferta' ? 16 : -6), MARGE.s + 14);
         el('text', { x, y, class: `etiqueta-corba ${tipus}` }, zona, (model.fantasmes || []).some(f => f.tipus === tipus) ? `${lletra}₁` : lletra);
+      }
+    }
+
+    // Intervenció: oferta amb impost o línia de preu màxim / mínim.
+    if (exc && exc.tipus === 'impost' && exc.ofertaImpost) {
+      const t = trams(Motor.peces(exc.ofertaImpost), eixos);
+      const d = camiDe(t, e);
+      const gc = el('g', { class: 'corba oferta impost' }, zona);
+      el('path', { d, class: 'traç' }, gc);
+      if (model.mouIntervencio) el('path', { d, class: 'toc', 'data-arrossega': 'intervencio' }, gc);
+      const fi = ultimVisible(t, eixos);
+      if (fi) el('text', { x: Math.min(e.x(fi.q) - 12, MARGE.e + W - 50), y: Math.max(e.y(fi.p) + 6, MARGE.s + 14), class: 'etiqueta-corba oferta', 'text-anchor': 'end' }, zona, 'O + t');
+    }
+    const gIv = el('g', { class: 'intervencio' }, svg);
+    if (exc && exc.vinculant) {
+      const pts = [];
+      if (exc.tipus === 'impost') pts.push([exc.Pc, 'Pc'], [exc.Pv, 'Pv']);
+      for (const [p, nom] of pts) {
+        if (p > eixos.pMax || p < 0) continue;
+        el('line', { x1: e.x(0), y1: e.y(p), x2: e.x(exc.Qt), y2: e.y(p), class: 'guia-iv' }, gIv);
+        el('circle', { cx: e.x(exc.Qt), cy: e.y(p), r: 5, class: 'punt-iv' }, gIv);
+        el('text', { x: e.x(0) + 5, y: e.y(p) - 6, class: 'etiqueta-iv' }, gIv, `${nom} = ${Motor.num(p)}`);
+      }
+      if (exc.Qt <= eixos.qMax) {
+        el('line', { x1: e.x(exc.Qt), y1: e.y(Math.max(exc.Pc, exc.Pv)), x2: e.x(exc.Qt), y2: e.y(0), class: 'guia-iv' }, gIv);
+        el('text', { x: e.x(exc.Qt) + 5, y: e.y(0) - 22, class: 'etiqueta-iv' }, gIv, `Q = ${Motor.num(exc.Qt)}`);
+      }
+      if ((exc.tipus === 'maxim' || exc.tipus === 'minim') && isFinite(exc.qd) && isFinite(exc.qs)) {
+        const y = e.y(exc.valor);
+        const classe = exc.qd > exc.qs ? 'exces-demanda' : 'exces-oferta';
+        el('line', { x1: e.x(Math.min(exc.qd, exc.qs)), y1: y, x2: e.x(Math.min(Math.max(exc.qd, exc.qs), eixos.qMax)), y2: y, class: `tram-exces ${classe}` }, gIv);
       }
     }
 
@@ -242,6 +288,22 @@
       el('line', { x1: e.x(0), y1: y, x2: e.x(eixos.qMax), y2: y, class: 'toc' }, n);
       el('rect', { x: e.x(eixos.qMax) - 46, y: y - 11, width: 46, height: 22, rx: 5, class: 'marca-nansa' }, n);
       el('text', { x: e.x(eixos.qMax) - 23, y: y + 4, 'text-anchor': 'middle', class: 'text-preu' }, n, Motor.num(preu.valor));
+    }
+    // Després de «Prova un preu», perquè quedi a sobre si coincideixen.
+    if (exc && (exc.tipus === 'maxim' || exc.tipus === 'minim')) {
+      const y = e.y(Math.min(exc.valor, eixos.pMax));
+      const text = `${exc.tipus === 'maxim' ? 'màx.' : 'mín.'} ${Motor.num(exc.valor)}`;
+      const atr = model.mouIntervencio
+        ? { class: 'nansa intervencio', 'data-arrossega': 'intervencio', tabindex: 0, role: 'button',
+          'aria-label': `Preu ${exc.tipus === 'maxim' ? 'màxim' : 'mínim'}: ${Motor.num(exc.valor)} €. Mou-lo amb les fletxes amunt i avall.` }
+        : { class: 'nansa intervencio fixa' };
+      const n = el('g', atr, gn);
+      el('line', { x1: e.x(0), y1: y, x2: e.x(eixos.qMax), y2: y, class: 'linia-iv' }, n);
+      if (model.mouIntervencio) el('line', { x1: e.x(0), y1: y, x2: e.x(eixos.qMax), y2: y, class: 'toc' }, n);
+      // A la dreta; a l'esquerra si hi ha la caixa de «Prova un preu», perquè no se solapin.
+      const x0 = preu && preu.visible ? e.x(0) + 4 : e.x(eixos.qMax) - 70;
+      el('rect', { x: x0, y: y - 11, width: 70, height: 22, rx: 5, class: 'marca-nansa' }, n);
+      el('text', { x: x0 + 35, y: y + 4, 'text-anchor': 'middle', class: 'text-preu' }, n, text);
     }
   }
 

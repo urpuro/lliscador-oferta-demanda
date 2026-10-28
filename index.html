@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Oferta i demanda · Lliscador</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="css/estil.css?v=20261020b">
+  <link rel="stylesheet" href="css/estil.css?v=20261028">
 </head>
 <body>
   <header class="capcalera">
@@ -60,6 +60,24 @@
               <summary>Com es calcula?</summary>
               <ol id="passos"></ol>
             </details>
+          </div>
+
+          <div class="targeta excedents-panell">
+            <h2>Excedents i intervenció</h2>
+            <div class="controls-iv">
+              <label class="interruptor"><input type="checkbox" id="mostra-excedents"> Mostra els excedents</label>
+              <label class="camp-iv">Intervenció
+                <select id="intervencio">
+                  <option value="cap">Cap (mercat lliure)</option>
+                  <option value="maxim">Preu màxim</option>
+                  <option value="minim">Preu mínim</option>
+                  <option value="impost">Impost per unitat venuda</option>
+                </select>
+              </label>
+              <label class="camp-iv" id="valor-iv-cont" hidden><span id="valor-iv-etiqueta">Valor</span>
+                <input type="number" id="valor-intervencio" inputmode="decimal" step="any" min="0"> €</label>
+            </div>
+            <div id="excedents"></div>
           </div>
 
           <div class="targeta" id="analisi-preu" hidden></div>
@@ -120,12 +138,12 @@
     </section>
   </main>
 
-  <script src="js/motor.js?v=20261020b"></script>
-  <script src="js/casos.js?v=20261020b"></script>
-  <script src="js/grafic.js?v=20261020b"></script>
-  <script src="js/editor.js?v=20261020b"></script>
-  <script src="js/exercicis.js?v=20261020b"></script>
-  <script src="js/practica.js?v=20261020b"></script>
-  <script src="js/app.js?v=20261020b"></script>
+  <script src="js/motor.js?v=20261028"></script>
+  <script src="js/casos.js?v=20261028"></script>
+  <script src="js/grafic.js?v=20261028"></script>
+  <script src="js/editor.js?v=20261028"></script>
+  <script src="js/exercicis.js?v=20261028"></script>
+  <script src="js/practica.js?v=20261028"></script>
+  <script src="js/app.js?v=20261028"></script>
 </body>
 </html>

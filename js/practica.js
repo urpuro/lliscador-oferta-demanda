@@ -279,6 +279,10 @@
         eixos: EIXOS, demanda: d.demanda, oferta: d.oferta, fantasmes: d.fantasmes, editables: [],
         eq: d.demanda && d.oferta ? Motor.equilibri(d.demanda, d.oferta) : null,
       };
+      if (d.intervencio) {
+        model.excedents = Motor.excedents(d.demanda, d.oferta, d.intervencio);
+        if (model.excedents.calculable && model.excedents.vinculant) { model.eqAbans = model.eq; model.eq = null; }
+      }
       if (d.fantasmes && d.fantasmes.length) {
         const abans = { demanda: d.demanda, oferta: d.oferta };
         for (const f of d.fantasmes) abans[f.tipus] = f;

@@ -282,20 +282,21 @@
     return (Math.abs(a - 1) < 1e-9 ? '' : num(a)) + v;
   }
 
-  // Expressió «c0 + c1·v» ben escrita: «90 − P», «−10 + 2P», «0,5Q»…
+  // Expressió lineal amb el pendent davant, «c1·v + c0»: «−P + 90», «2P − 10», «0,5Q»…
   function expressio(c0, c1, v) {
     const z0 = Math.abs(c0) < 1e-9, z1 = Math.abs(c1) < 1e-9;
     if (z1) return num(c0);
-    if (z0) return (c1 < 0 ? '−' : '') + terme(c1, v);
-    return num(c0) + (c1 < 0 ? ' − ' : ' + ') + terme(c1, v);
+    const t = (c1 < 0 ? '−' : '') + terme(c1, v);
+    if (z0) return t;
+    return t + (c0 < 0 ? ' − ' : ' + ') + num(Math.abs(c0));
   }
 
-  // Substitució numèrica «c0 + c1·x»: «90 − 50» o «−10 + 0,5·60».
+  // Substitució numèrica de «c1·x + c0», també amb el pendent davant: «−50 + 90», «0,5·60 − 10».
   function substitucio(c0, c1, x) {
     const a = Math.abs(c1);
-    const t = Math.abs(a - 1) < 1e-9 ? num(x) : `${num(a)}·${num(x)}`;
-    if (Math.abs(c0) < 1e-9) return (c1 < 0 ? '−' : '') + t;
-    return num(c0) + (c1 < 0 ? ' − ' : ' + ') + t;
+    const t = (c1 < 0 ? '−' : '') + (Math.abs(a - 1) < 1e-9 ? num(x) : `${num(a)}·${num(x)}`);
+    if (Math.abs(c0) < 1e-9) return t;
+    return t + (c0 < 0 ? ' − ' : ' + ') + num(Math.abs(c0));
   }
 
   /* ---------- Equacions ---------- */
@@ -366,7 +367,7 @@
       const D = directa(d), S = directa(o);
       lin.push('A l\'equilibri, la quantitat demandada és igual a la quantitat oferta: Qd = Qs.');
       lin.push(`${expressio(D.ind, D.pend, 'P')} = ${expressio(S.ind, S.pend, 'P')}`);
-      lin.push(`Agrupem: ${num(D.ind - S.ind)} = ${expressio(0, S.pend - D.pend, 'P')}`);
+      lin.push(`Agrupem: ${expressio(0, S.pend - D.pend, 'P')} = ${num(D.ind - S.ind)}`);
       lin.push(`P* = ${num(D.ind - S.ind)} / ${num(S.pend - D.pend)} ${igual(eq.p)}`);
       lin.push(`Q* = ${substitucio(D.ind, D.pend, eq.p)} ${igual(eq.q)}`);
       return lin;
@@ -406,9 +407,108 @@
     return lin;
   }
 
+  /* ---------- Excedents i intervenció ---------- */
+
+  // Integral exacta d'una funció lineal a trossos entre q0 i q1 (regla dels trapezis
+  // als punts de trencament) i punts del traç per dibuixar-la.
+  function puntsFuncio(f, q0, q1, trencaments) {
+    const qs = [q0, ...trencaments.filter(q => q > q0 + 1e-9 && q < q1 - 1e-9), q1];
+    return qs.map(q => ({ q, p: f(q) }));
+  }
+  function integral(f, q0, q1, trencaments) {
+    if (q1 - q0 < 1e-12) return 0;
+    const ps = puntsFuncio(f, q0, q1, trencaments);
+    let s = 0;
+    for (let i = 1; i < ps.length; i++) s += (ps[i].q - ps[i - 1].q) * (ps[i].p + ps[i - 1].p) / 2;
+    return s;
+  }
+
+  // Corba d'oferta desplaçada amunt t € (els venedors paguen un impost de t € per unitat).
+  function ofertaAmbImpost(oferta, t) {
+    return Object.assign({}, oferta, {
+      a: { q: oferta.a.q, p: oferta.a.p + t }, b: { q: oferta.b.q, p: oferta.b.p + t },
+    });
+  }
+
+  // Excedent del consumidor (EC), del productor (EP), recaptació (R) i pèrdua
+  // irrecuperable d'eficiència (PI), en un mercat lliure o amb una intervenció:
+  //  intervencio = {tipus: 'cap' | 'maxim' | 'minim' | 'impost', valor}
+  // Cal que les dues corbes siguin rectes no verticals (poden tenir esgotament).
+  function excedents(demanda, oferta, intervencio) {
+    const iv = intervencio || { tipus: 'cap' };
+    const rd = recta(demanda.a, demanda.b), ro = recta(oferta.a, oferta.b);
+    if (!rd || !ro) return { calculable: false, motiu: 'Falten les corbes.' };
+    if (rd.forma === 'vertical' || ro.forma === 'vertical') {
+      return { calculable: false, motiu: 'Amb una corba vertical, els excedents no es poden calcular: no hi ha un preu màxim (o mínim) a partir del qual comptar-los.' };
+    }
+    if ((rd.forma === 'lineal' && rd.m > 0) || (ro.forma === 'lineal' && ro.m < 0)) {
+      return { calculable: false, motiu: 'Amb aquests pendents (poc habituals), els excedents no tenen sentit.' };
+    }
+    const eq = equilibri(demanda, oferta);
+    if (eq.tipus !== 'punt') {
+      return { calculable: false, motiu: eq.tipus === 'cap' ? 'No hi ha equilibri: no s\'intercanvia res i no hi ha excedents.' : 'L\'equilibri no és un sol punt.' };
+    }
+
+    // Preu màxim que paguen els compradors i preu mínim que demanen els venedors per a la unitat Q.
+    const pD = q => (rd.forma === 'lineal' ? rd.n + rd.m * q : rd.p);
+    const pS = q => (ro.forma === 'lineal' ? Math.max(0, ro.n + ro.m * q) : ro.p);
+    const trenca = ro.forma === 'lineal' && ro.n < 0 ? [-ro.n / ro.m] : [];
+    const qNum = r => (r.interval ? r.interval[0] : r.q);
+
+    const res = {
+      calculable: true, tipus: iv.tipus, valor: iv.valor, eq, vinculant: false,
+      Qt: eq.q, Pc: eq.p, Pv: eq.p, recaptacio: 0,
+    };
+    const v = Number(iv.valor);
+    if (iv.tipus === 'maxim' && v < eq.p - 1e-9) {
+      res.vinculant = true;
+      res.Pc = res.Pv = v;
+      res.qd = qNum(quantitatA(demanda, v));
+      res.qs = qNum(quantitatA(oferta, v));
+      res.Qt = Math.min(res.qd, res.qs);
+    } else if (iv.tipus === 'minim' && v > eq.p + 1e-9) {
+      res.vinculant = true;
+      res.Pc = res.Pv = v;
+      res.qd = qNum(quantitatA(demanda, v));
+      res.qs = qNum(quantitatA(oferta, v));
+      res.Qt = Math.min(res.qd, res.qs);
+    } else if (iv.tipus === 'impost' && v > 1e-9) {
+      res.vinculant = true;
+      res.ofertaImpost = ofertaAmbImpost(oferta, v);
+      const eqT = equilibri(demanda, res.ofertaImpost);
+      if (eqT.tipus === 'punt') {
+        res.Qt = eqT.q; res.Pc = eqT.p; res.Pv = eqT.p - v;
+      } else {
+        res.Qt = 0; res.Pc = pD(0); res.Pv = res.Pc - v;
+      }
+      res.recaptacio = v * res.Qt;
+    }
+
+    const Qt = res.Qt;
+    res.EC = integral(q => pD(q) - res.Pc, 0, Qt, []);
+    res.EP = integral(q => res.Pv - pS(q), 0, Qt, trenca);
+    res.PI = integral(q => pD(q) - pS(q), Qt, eq.q, trenca);
+    res.total = res.EC + res.EP + res.recaptacio;
+    res.lliure = {
+      EC: integral(q => pD(q) - eq.p, 0, eq.q, []),
+      EP: integral(q => eq.p - pS(q), 0, eq.q, trenca),
+    };
+    res.lliure.total = res.lliure.EC + res.lliure.EP;
+
+    // Polígons per dibuixar les àrees.
+    const dem = puntsFuncio(pD, 0, Qt, []), ofe = puntsFuncio(pS, 0, Qt, trenca);
+    res.poligons = {
+      EC: [{ q: 0, p: res.Pc }, ...dem, { q: Qt, p: res.Pc }],
+      EP: [{ q: 0, p: res.Pv }, { q: Qt, p: res.Pv }, ...ofe.reverse()],
+      PI: eq.q - Qt > 1e-9 ? [...puntsFuncio(pD, Qt, eq.q, []), ...puntsFuncio(pS, Qt, eq.q, trenca).reverse()] : [],
+      R: res.recaptacio > 0 ? [{ q: 0, p: res.Pv }, { q: Qt, p: res.Pv }, { q: Qt, p: res.Pc }, { q: 0, p: res.Pc }] : [],
+    };
+    return res;
+  }
+
   const Motor = {
     recta, peces, equilibri, quantitatA, elasticitat, classificaElasticitat,
-    equacions, passos, num, aprox, igual, expressio, preuMaximDemanda, preuMinimOferta,
+    equacions, passos, num, aprox, igual, expressio, substitucio, excedents, ofertaAmbImpost, preuMaximDemanda, preuMinimOferta,
   };
 
   if (typeof module !== 'undefined' && module.exports) module.exports = Motor;

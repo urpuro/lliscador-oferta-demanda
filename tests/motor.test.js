@@ -104,19 +104,19 @@ test('quantitat a un preu donat', () => {
 
 test('equacions', () => {
   const { demanda, oferta } = cas('basic');
-  assert.equal(M.equacions(demanda).directa[0].expr, 'Qd = 90 − P');
-  assert.equal(M.equacions(demanda).inversa[0].expr, 'P = 90 − Q');
-  assert.equal(M.equacions(oferta).directa[0].expr, 'Qs = −10 + P');
+  assert.equal(M.equacions(demanda).directa[0].expr, 'Qd = −P + 90');
+  assert.equal(M.equacions(demanda).inversa[0].expr, 'P = −Q + 90');
+  assert.equal(M.equacions(oferta).directa[0].expr, 'Qs = P − 10');
 
   const hotel = cas('hotel-alta').oferta;
   const e = M.equacions(hotel);
-  assert.deepEqual(e.directa.map(l => l.expr), ['Qs = −10 + P', 'Qs = 50']);
+  assert.deepEqual(e.directa.map(l => l.expr), ['Qs = P − 10', 'Qs = 50']);
   assert.deepEqual(e.directa.map(l => l.cond), ['si P ≤ 60', 'si P > 60']);
 
   const sal = M.equacions(cas('demanda-saturada').demanda);
   assert.deepEqual(sal.directa.map(l => l.cond), ['si P ≥ 40', 'si P < 40']);
 
-  assert.equal(M.equacions(cas('demanda-elastica').demanda).directa[0].expr, 'Qd = 240 − 4P');
+  assert.equal(M.equacions(cas('demanda-elastica').demanda).directa[0].expr, 'Qd = −4P + 240');
 });
 
 test('format de nombres', () => {
@@ -126,13 +126,56 @@ test('format de nombres', () => {
   assert.equal(M.aprox(1 / 3), '≈ 0,33');
   assert.equal(M.aprox(0.5), '0,5');
   assert.equal(M.expressio(0, 0.5, 'Q'), '0,5Q');
+  assert.equal(M.expressio(-10, 2, 'P'), '2P − 10');
+  assert.equal(M.expressio(90, -1, 'Q'), '−Q + 90');
+  assert.equal(M.substitucio(-10, 0.5, 60), '0,5·60 − 10');
 });
 
 test('passos de resolució del cas bàsic', () => {
   const { demanda, oferta } = cas('basic');
   const eq = M.equilibri(demanda, oferta);
   const ps = M.passos(demanda, oferta, eq);
-  assert.ok(ps.includes('90 − P = −10 + P'));
+  assert.ok(ps.includes('−P + 90 = P − 10'));
   assert.ok(ps.includes('P* = 100 / 2 = 50'));
-  assert.ok(ps.includes('Q* = 90 − 50 = 40'));
+  assert.ok(ps.includes('Q* = −50 + 90 = 40'));
+});
+
+test('excedents: mercat lliure, preu màxim, preu mínim i impost', () => {
+  const { demanda, oferta } = cas('basic'); // P = −Q + 90 · P = Q + 10 · equilibri (40, 50)
+  let r = M.excedents(demanda, oferta, { tipus: 'cap' });
+  proper(r.EC, 800); proper(r.EP, 800); proper(r.PI, 0); proper(r.total, 1600);
+
+  r = M.excedents(demanda, oferta, { tipus: 'maxim', valor: 40 });
+  assert.ok(r.vinculant);
+  proper(r.Qt, 30); proper(r.qd, 50); proper(r.qs, 30);
+  proper(r.EC, 1050); proper(r.EP, 450); proper(r.PI, 100);
+
+  r = M.excedents(demanda, oferta, { tipus: 'minim', valor: 60 });
+  proper(r.Qt, 30); proper(r.qs, 50); proper(r.EC, 450); proper(r.EP, 1050); proper(r.PI, 100);
+
+  r = M.excedents(demanda, oferta, { tipus: 'impost', valor: 20 });
+  proper(r.Qt, 30); proper(r.Pc, 60); proper(r.Pv, 40);
+  proper(r.recaptacio, 600); proper(r.EC, 450); proper(r.EP, 450); proper(r.PI, 100);
+  proper(r.total + r.PI, r.lliure.total);
+});
+
+test('excedents: un preu màxim per sobre de l\'equilibri no fa res', () => {
+  const { demanda, oferta } = cas('basic');
+  const r = M.excedents(demanda, oferta, { tipus: 'maxim', valor: 70 });
+  assert.equal(r.vinculant, false);
+  proper(r.EC, 800); proper(r.PI, 0);
+});
+
+test('excedents: oferta que comença a preu zero (tram pla a P = 0)', () => {
+  const demanda = { tipus: 'demanda', a: { q: 0, p: 60 }, b: { q: 60, p: 0 }, limit: null }; // P = −Q + 60
+  const oferta = { tipus: 'oferta', a: { q: 20, p: 0 }, b: { q: 40, p: 20 }, limit: null };  // P = Q − 20
+  const r = M.excedents(demanda, oferta, { tipus: 'cap' });
+  proper(r.eq.q, 40); proper(r.eq.p, 20);
+  proper(r.EC, 800);
+  proper(r.EP, 20 * 20 + 20 * 20 / 2); // rectangle fins a Q = 20 i triangle
+});
+
+test('excedents: amb una corba vertical no es poden calcular', () => {
+  const { demanda, oferta } = cas('demanda-perfectament-inelastica');
+  assert.equal(M.excedents(demanda, oferta).calculable, false);
 });

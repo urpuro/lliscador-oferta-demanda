@@ -23,7 +23,7 @@
   'use strict';
 
   const Motor = typeof module !== 'undefined' && module.exports ? require('./motor.js') : arrel.Motor;
-  const { num, igual, expressio } = Motor;
+  const { num, igual, expressio, substitucio } = Motor;
 
   const EIXOS = { qMax: 100, pMax: 100, pas: 1 };
 
@@ -273,12 +273,6 @@
     };
   }
 
-  function substitucio(a, b, x) {
-    const t = Math.abs(Math.abs(b) - 1) < 1e-9 ? num(x) : `${num(Math.abs(b))}·${num(x)}`;
-    if (Math.abs(a) < 1e-9) return (b < 0 ? '−' : '') + t;
-    return `${num(a)} ${b < 0 ? '−' : '+'} ${t}`;
-  }
-
   /* ---------- 5. Què passa si…? (desplaçaments) ---------- */
 
   // forma: com són les corbes del mercat (normal, oferta vertical…)
@@ -510,6 +504,159 @@
     };
   }
 
+  /* ---------- Excedents (comú als exercicis 9, 10 i 11) ---------- */
+
+  // Parella amb rectes que tallen l'eix vertical a preus positius, de manera
+  // que els excedents són triangles i trapezis.
+  //  inverses: demanda P = mD·Q + nD · oferta P = mS·Q + nS
+  function parellaExcedents(r) {
+    const k = parella(r, {
+      pendentsD: [0.5, 1, 2], pendentsS: [0.5, 1, 2],
+      valida: k => k.indS <= 0 && -k.indD / k.pendD <= EIXOS.pMax,
+    });
+    return Object.assign(k, {
+      mD: 1 / k.pendD, nD: -k.indD / k.pendD,
+      mS: 1 / k.pendS, nS: -k.indS / k.pendS,
+    });
+  }
+  const totBonic = valors => valors.every(x => esBonic(x) && x >= 0);
+  const euros = x => `${num(x)} €`;
+  const liniesInverses = k => [
+    `Forma inversa de la demanda: P = ${expressio(k.nD, k.mD, 'Q')} (talla l'eix vertical a P = ${num(k.nD)}).`,
+    `Forma inversa de l'oferta: P = ${expressio(k.nS, k.mS, 'Q')} (talla l'eix vertical a P = ${num(k.nS)}).`,
+  ];
+
+  /* ---------- 9. Excedents a l'equilibri ---------- */
+
+  function excedentsEquilibri(r) {
+    let k, D, O, x;
+    for (;;) {
+      k = parellaExcedents(r);
+      D = corbaDirecta('demanda', k.indD, k.pendD); O = corbaDirecta('oferta', k.indS, k.pendS);
+      x = Motor.excedents(D, O, { tipus: 'cap' });
+      if (x.calculable && totBonic([x.EC, x.EP])) break;
+    }
+    return {
+      tipus: 'excedents',
+      titol: 'Excedents a l\'equilibri',
+      enunciat: [
+        'Les funcions de demanda i d\'oferta d\'un mercat són:',
+        { formula: textCorba(D) },
+        { formula: textCorba(O) },
+        'Calcula l\'excedent del consumidor (EC) i l\'excedent del productor (EP) a l\'equilibri.',
+      ],
+      camps: [campNombre('ec', 'EC =', x.EC, '€'), campNombre('ep', 'EP =', x.EP, '€')],
+      pista: 'Troba primer l\'equilibri. L\'EC és el triangle entre la demanda i el preu d\'equilibri: la base és Q* i l\'alçada, el preu on la demanda talla l\'eix vertical menys P*. L\'EP és el triangle entre el preu d\'equilibri i l\'oferta.',
+      solucio: [
+        `L'equilibri és P* = ${num(k.P)} € i Q* = ${num(k.Q)}.`,
+        ...liniesInverses(k),
+        `EC = (${num(k.nD)} − ${num(k.P)}) · ${num(k.Q)} / 2 = ${euros(x.EC)}`,
+        `EP = (${num(k.P)} − ${num(k.nS)}) · ${num(k.Q)} / 2 = ${euros(x.EP)}`,
+      ],
+      despres: { demanda: D, oferta: O, intervencio: { tipus: 'cap' } },
+    };
+  }
+
+  /* ---------- 10. Preu màxim o preu mínim ---------- */
+
+  function preuFixat(r) {
+    const tipus = tria(r, ['maxim', 'minim']);
+    let k, D, O, x, v;
+    for (;;) {
+      k = parellaExcedents(r);
+      v = tipus === 'maxim' ? k.P - entre(r, 5, 20, 5) : k.P + entre(r, 5, 20, 5);
+      if (tipus === 'maxim' && v <= k.nS + 1) continue;
+      if (tipus === 'minim' && v >= k.nD - 1) continue;
+      D = corbaDirecta('demanda', k.indD, k.pendD); O = corbaDirecta('oferta', k.indS, k.pendS);
+      x = Motor.excedents(D, O, { tipus, valor: v });
+      if (x.calculable && x.vinculant && x.Qt > 0 && totBonic([x.Qt, x.qd, x.qs, x.EC, x.EP, x.PI])) break;
+    }
+    const maxim = tipus === 'maxim';
+    const desequilibri = Math.abs(x.qd - x.qs);
+    const pDt = k.mD * x.Qt + k.nD, pSt = k.mS * x.Qt + k.nS;
+    const solucio = [
+      `Sense intervenció, l'equilibri seria P* = ${num(k.P)} € i Q* = ${num(k.Q)}.`,
+      `Al preu de ${num(v)} €: Qd = ${substitucio(k.indD, k.pendD, v)} = ${num(x.qd)} i Qs = ${substitucio(k.indS, k.pendS, v)} = ${num(x.qs)}.`,
+      maxim
+        ? `Com que es demana més del que s'ofereix, hi ha escassetat de ${num(desequilibri)} unitats. Només es pot comprar el que s'ofereix: Q = ${num(x.Qt)}.`
+        : `Com que s'ofereix més del que es demana, hi ha un excedent de producte de ${num(desequilibri)} unitats. Només es ven el que es demana: Q = ${num(x.Qt)}.`,
+      ...liniesInverses(k),
+      maxim
+        ? `EC: trapezi entre la demanda i el preu de ${num(v)} €, de Q = 0 a Q = ${num(x.Qt)}. Els costats paral·lels fan ${num(k.nD)} − ${num(v)} = ${num(k.nD - v)} i ${num(pDt)} − ${num(v)} = ${num(pDt - v)}: EC = (${num(k.nD - v)} + ${num(pDt - v)}) / 2 · ${num(x.Qt)} = ${euros(x.EC)}`
+        : `EC: triangle entre la demanda i el preu de ${num(v)} €: EC = (${num(k.nD)} − ${num(v)}) · ${num(x.Qt)} / 2 = ${euros(x.EC)}`,
+      maxim
+        ? `EP: triangle entre el preu de ${num(v)} € i l'oferta: EP = (${num(v)} − ${num(k.nS)}) · ${num(x.Qt)} / 2 = ${euros(x.EP)}`
+        : `EP: trapezi entre el preu de ${num(v)} € i l'oferta, de Q = 0 a Q = ${num(x.Qt)}. Els costats paral·lels fan ${num(v)} − ${num(k.nS)} = ${num(v - k.nS)} i ${num(v)} − ${num(pSt)} = ${num(v - pSt)}: EP = (${num(v - k.nS)} + ${num(v - pSt)}) / 2 · ${num(x.Qt)} = ${euros(x.EP)}`,
+      `PI: triangle entre la demanda i l'oferta, de Q = ${num(x.Qt)} a Q* = ${num(k.Q)}. A Q = ${num(x.Qt)}, la demanda val ${num(pDt)} i l'oferta ${num(pSt)}: PI = (${num(pDt)} − ${num(pSt)}) · (${num(k.Q)} − ${num(x.Qt)}) / 2 = ${euros(x.PI)}`,
+    ];
+    return {
+      tipus: 'preu-fixat',
+      titol: maxim ? 'Un preu màxim' : 'Un preu mínim',
+      enunciat: [
+        'Les funcions de demanda i d\'oferta d\'un mercat són:',
+        { formula: textCorba(D) },
+        { formula: textCorba(O) },
+        maxim
+          ? `El govern prohibeix vendre a més de ${num(v)} € (preu màxim).`
+          : `El govern prohibeix vendre a menys de ${num(v)} € (preu mínim).`,
+      ],
+      camps: [
+        campNombre('q', 'Quantitat que s\'intercanvia: Q =', x.Qt, 'unitats'),
+        campNombre('desequilibri', maxim ? 'Escassetat:' : 'Excedent de producte:', desequilibri, 'unitats'),
+        campNombre('ec', 'Excedent del consumidor: EC =', x.EC, '€'),
+        campNombre('ep', 'Excedent del productor: EP =', x.EP, '€'),
+        campNombre('pi', 'Pèrdua irrecuperable: PI =', x.PI, '€'),
+      ],
+      pista: maxim
+        ? 'Calcula Qd i Qs al preu màxim. Com que no es pot vendre més car, només s\'intercanvia la quantitat més petita (la que s\'ofereix). Fes un dibuix: l\'EC queda entre la demanda i el preu màxim (un trapezi), l\'EP entre el preu màxim i l\'oferta (un triangle) i la PI és el triangle entre les dues corbes, de la quantitat intercanviada fins a Q*.'
+        : 'Calcula Qd i Qs al preu mínim. Com que no es pot vendre més barat, només s\'intercanvia la quantitat més petita (la que es demana). Fes un dibuix: l\'EC queda entre la demanda i el preu mínim (un triangle), l\'EP entre el preu mínim i l\'oferta (un trapezi) i la PI és el triangle entre les dues corbes, de la quantitat intercanviada fins a Q*.',
+      solucio,
+      despres: { demanda: D, oferta: O, intervencio: { tipus, valor: v } },
+    };
+  }
+
+  /* ---------- 11. Impost per unitat ---------- */
+
+  function impost(r) {
+    let k, D, O, x, t;
+    for (;;) {
+      k = parellaExcedents(r);
+      t = entre(r, 5, 25, 5);
+      D = corbaDirecta('demanda', k.indD, k.pendD); O = corbaDirecta('oferta', k.indS, k.pendS);
+      x = Motor.excedents(D, O, { tipus: 'impost', valor: t });
+      if (x.calculable && x.Qt > 0 && totBonic([x.Qt, x.Pc, x.Pv, x.recaptacio, x.PI])) break;
+    }
+    return {
+      tipus: 'impost',
+      titol: 'Un impost per unitat',
+      enunciat: [
+        'Les funcions de demanda i d\'oferta d\'un mercat són:',
+        { formula: textCorba(D) },
+        { formula: textCorba(O) },
+        `L'Estat posa un impost de ${num(t)} € per cada unitat venuda, que paguen els venedors.`,
+      ],
+      camps: [
+        campNombre('q', 'Quantitat que s\'intercanvia: Q =', x.Qt, 'unitats'),
+        campNombre('pc', 'Preu que paguen els compradors: Pc =', x.Pc, '€'),
+        campNombre('pv', 'Preu que es queden els venedors: Pv =', x.Pv, '€'),
+        campNombre('r', 'Recaptació de l\'Estat: R =', x.recaptacio, '€'),
+        campNombre('pi', 'Pèrdua irrecuperable: PI =', x.PI, '€'),
+      ],
+      pista: `Per als venedors, l'impost és com un cost de ${num(t)} € més per unitat: l'oferta en forma inversa puja ${num(t)} € (P = … + ${num(t)}). Iguala-la a la demanda en forma inversa per trobar la nova quantitat. La recaptació és l'impost per la quantitat, i la PI és el triangle d'alçada ${num(t)} entre la nova quantitat i Q*.`,
+      solucio: [
+        ...liniesInverses(k),
+        `Amb l'impost, l'oferta inversa puja ${num(t)} €: P = ${expressio(k.nS + t, k.mS, 'Q')}.`,
+        `Igualem amb la demanda: ${expressio(k.nD, k.mD, 'Q')} = ${expressio(k.nS + t, k.mS, 'Q')} → ${Math.abs(k.mS - k.mD - 1) < 1e-9 ? '' : `${expressio(0, k.mS - k.mD, 'Q')} = ${num(k.nD - k.nS - t)} → `}Q = ${num(x.Qt)}`,
+        `Preu que paguen els compradors (demanda): Pc = ${substitucio(k.nD, k.mD, x.Qt)} = ${euros(x.Pc)}`,
+        `Preu que es queden els venedors: Pv = Pc − ${num(t)} = ${euros(x.Pv)}`,
+        `Recaptació: R = ${num(t)} · ${num(x.Qt)} = ${euros(x.recaptacio)}`,
+        `Sense impost, l'equilibri seria Q* = ${num(k.Q)} (P* = ${num(k.P)} €). PI = ${num(t)} · (${num(k.Q)} − ${num(x.Qt)}) / 2 = ${euros(x.PI)}`,
+        `De l'impost de ${num(t)} €, els compradors en suporten ${num(x.Pc - k.P)} € (paguen més que abans) i els venedors, ${num(k.P - x.Pv)} € (cobren menys).`,
+      ],
+      despres: { demanda: D, oferta: O, intervencio: { tipus: 'impost', valor: t } },
+    };
+  }
+
   /* ---------- Llista de tipus ---------- */
 
   const TIPUS = [
@@ -521,6 +668,9 @@
     { id: 'exces', nom: 'Preu fora de l\'equilibri', descripcio: 'Calcula l\'excés de demanda o d\'oferta a un preu donat i cap on anirà el preu.', genera: exces },
     { id: 'esgotament', nom: 'Equilibri amb esgotament', descripcio: 'Calcula l\'equilibri quan l\'oferta té una capacitat màxima o la demanda s\'esgota.', genera: esgotament },
     { id: 'elasticitat', nom: 'Elasticitat a l\'equilibri', descripcio: 'Calcula l\'elasticitat de la demanda o de l\'oferta i classifica-la.', genera: elasticitat },
+    { id: 'excedents', nom: 'Excedents a l\'equilibri', descripcio: 'Calcula l\'excedent del consumidor i el del productor.', genera: excedentsEquilibri },
+    { id: 'preu-fixat', nom: 'Preu màxim o mínim', descripcio: 'Calcula la quantitat, l\'escassetat o l\'excedent de producte, els excedents i la pèrdua irrecuperable quan el govern fixa el preu.', genera: preuFixat },
+    { id: 'impost', nom: 'Impost per unitat', descripcio: 'Calcula la nova quantitat, el preu que paga el comprador i el que rep el venedor, la recaptació i la pèrdua irrecuperable.', genera: impost },
   ];
 
   function genera(tipus, llavor) {

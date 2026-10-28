@@ -13,6 +13,8 @@
     demanda: null,
     oferta: null,
     preu: { visible: false, valor: 60 },
+    intervencio: { tipus: 'cap', valor: 0 },
+    excedents: false,
   };
   let editor = null;
 
@@ -53,6 +55,8 @@
     estat.demanda = Object.assign({ tipus: 'demanda' }, copia(c.demanda));
     estat.oferta = Object.assign({ tipus: 'oferta' }, copia(c.oferta));
     estat.preu.valor = Math.round(c.pMax * 0.6);
+    estat.intervencio = Object.assign({ tipus: 'cap', valor: 0 }, c.intervencio);
+    estat.excedents = !!c.excedents || estat.intervencio.tipus !== 'cap';
     $('cas').value = c.id;
     $('context').textContent = c.context;
     $('observa').textContent = c.observa;
@@ -249,15 +253,92 @@
     $('resum').innerHTML = `${linia('demanda', 'D')}${linia('oferta', 'O')}<span class="eq-resum">${txt}</span>`;
   }
 
+  /* ---------- Excedents i intervenció ---------- */
+
+  const euros = x => `${Motor.aprox(x)} €`;
+
+  function mostraExcedents(exc) {
+    const iv = estat.intervencio;
+    $('mostra-excedents').checked = estat.excedents;
+    $('intervencio').value = iv.tipus;
+    $('valor-iv-cont').hidden = iv.tipus === 'cap';
+    $('valor-iv-etiqueta').textContent = { maxim: 'Preu màxim', minim: 'Preu mínim', impost: 'Impost' }[iv.tipus] || '';
+    if (document.activeElement !== $('valor-intervencio')) $('valor-intervencio').value = iv.valor;
+
+    const cont = $('excedents');
+    if (!exc) {
+      cont.innerHTML = '<p class="ajuda">Activa els excedents o tria una intervenció (preu màxim, preu mínim o impost) per veure com canvien.</p>';
+      return;
+    }
+    if (!exc.calculable) {
+      cont.innerHTML = `<p class="missatge avis">${escapa(exc.motiu)}</p>`;
+      return;
+    }
+    const eq = exc.eq;
+    const v = Motor.num(iv.valor);
+    let text = '';
+    if (iv.tipus === 'maxim' || iv.tipus === 'minim') {
+      const nom = iv.tipus === 'maxim' ? 'màxim' : 'mínim';
+      if (!exc.vinculant) {
+        text = `El preu ${nom} (${v} €) és ${iv.tipus === 'maxim' ? 'més alt' : 'més baix'} que el preu d'equilibri (${Motor.num(eq.p)} €): no obliga a res i el mercat queda igual.`;
+      } else if (iv.tipus === 'maxim') {
+        text = `El preu no pot passar de ${v} €. A aquest preu es demanen ${Motor.aprox(exc.qd)} unitats però només se n'ofereixen ${Motor.aprox(exc.qs)}: hi ha <strong class="exces-demanda">escassetat de ${Motor.aprox(exc.qd - exc.qs)} unitats</strong>. Només s'intercanvien les ${Motor.aprox(exc.Qt)} que s'ofereixen.`;
+      } else {
+        text = `El preu no pot baixar de ${v} €. A aquest preu s'ofereixen ${Motor.aprox(exc.qs)} unitats però només se'n demanen ${Motor.aprox(exc.qd)}: hi ha un <strong class="exces-oferta">excedent de producte de ${Motor.aprox(exc.qs - exc.qd)} unitats</strong> que no es ven. Només s'intercanvien les ${Motor.aprox(exc.Qt)} que es demanen.`;
+      }
+    } else if (iv.tipus === 'impost' && exc.vinculant) {
+      text = `Els venedors han de pagar ${v} € per cada unitat venuda: la corba d'oferta puja ${v} € (O + t). Els compradors passen a pagar ${euros(exc.Pc)} (abans ${euros(eq.p)}) i els venedors es queden ${euros(exc.Pv)}. De l'impost, els compradors en suporten ${euros(exc.Pc - eq.p)} i els venedors, ${euros(eq.p - exc.Pv)}.`;
+    } else if (iv.tipus === 'impost') {
+      text = 'Amb un impost de 0 € el mercat queda igual.';
+    }
+
+    const amb = exc.vinculant;
+    const fila = (nom, lliure, ara, classe = '') => `<tr class="${classe}"><th scope="row">${nom}</th><td>${lliure}</td>${amb ? `<td>${ara}</td>` : ''}</tr>`;
+    const impost = iv.tipus === 'impost' && amb;
+    cont.innerHTML = `
+      ${text ? `<p class="missatge">${text}</p>` : ''}
+      <table class="taula-excedents">
+        <thead><tr><th></th><th scope="col">Mercat lliure</th>${amb ? '<th scope="col">Amb la intervenció</th>' : ''}</tr></thead>
+        <tbody>
+          ${fila('Quantitat intercanviada', Motor.aprox(eq.q), Motor.aprox(exc.Qt))}
+          ${fila(impost ? 'Preu que paguen els compradors' : 'Preu', euros(eq.p), euros(exc.Pc))}
+          ${impost ? fila('Preu que reben els venedors', euros(eq.p), euros(exc.Pv)) : ''}
+          ${fila('<span class="mostra area-EC"></span>Excedent del consumidor (EC)', euros(exc.lliure.EC), euros(exc.EC))}
+          ${fila('<span class="mostra area-EP"></span>Excedent del productor (EP)', euros(exc.lliure.EP), euros(exc.EP))}
+          ${impost ? fila('<span class="mostra area-R"></span>Recaptació de l\'Estat (R)', '0 €', euros(exc.recaptacio)) : ''}
+          ${fila(impost ? 'Benestar total (EC + EP + R)' : 'Benestar total (EC + EP)', euros(exc.lliure.total), euros(exc.total), 'total')}
+          ${amb ? fila('<span class="mostra area-PI"></span>Pèrdua irrecuperable d\'eficiència (PI)', '0 €', euros(exc.PI), 'perdua') : ''}
+        </tbody>
+      </table>
+      <p class="ajuda">EC: àrea entre la demanda i el preu que paguen els compradors. EP: àrea entre el preu que reben els venedors i l'oferta.${amb ? ' PI: el benestar que es perd perquè s\'intercanvia menys que a l\'equilibri.' : ''}${amb && iv.tipus !== 'impost' ? ' Pots arrossegar la línia del preu al gràfic.' : ''}${impost ? ' Pots arrossegar la corba O + t per canviar l\'impost.' : ''}</p>`;
+  }
+
+  // Valor inicial raonable en triar una intervenció.
+  function valorInicial(tipus) {
+    const c = cas();
+    const eq = Motor.equilibri(estat.demanda, estat.oferta);
+    const P = eq.tipus === 'punt' ? eq.p : c.pMax / 2;
+    if (tipus === 'maxim') return Math.max(0, Math.floor((P - 10) / 5) * 5);
+    if (tipus === 'minim') return Math.min(c.pMax, Math.ceil((P + 10) / 5) * 5);
+    if (tipus === 'impost') return 10;
+    return 0;
+  }
+
   /* ---------- Dibuix general ---------- */
 
   function actualitza() {
     const eq = Motor.equilibri(estat.demanda, estat.oferta);
     const q = mostraAnalisiPreu();
+    const exc = estat.excedents || estat.intervencio.tipus !== 'cap'
+      ? Motor.excedents(estat.demanda, estat.oferta, estat.intervencio) : null;
+    const amb = exc && exc.calculable && exc.vinculant;
     Grafic.dibuixa($('grafic'), {
-      eixos: cas(), demanda: estat.demanda, oferta: estat.oferta, eq,
+      eixos: cas(), demanda: estat.demanda, oferta: estat.oferta,
+      eq: amb ? null : eq, eqAbans: amb ? eq : null,
+      excedents: exc, mouIntervencio: true,
       preu: Object.assign({}, estat.preu, q),
     });
+    mostraExcedents(exc);
     mostraEquilibri(eq);
     mostraAvisos();
     $('eq-demanda').innerHTML = htmlEquacions(estat.demanda);
@@ -291,6 +372,15 @@
 
     $('cas').addEventListener('change', ev => { location.hash = `#/explora/${ev.target.value}`; });
     $('restableix').addEventListener('click', () => carregaCas(estat.cas.id));
+    $('mostra-excedents').addEventListener('change', ev => { estat.excedents = ev.target.checked; actualitza(); });
+    $('intervencio').addEventListener('change', ev => {
+      estat.intervencio = { tipus: ev.target.value, valor: valorInicial(ev.target.value) };
+      actualitza();
+    });
+    $('valor-intervencio').addEventListener('input', ev => {
+      const v = parseFloat(String(ev.target.value).replace(',', '.'));
+      if (isFinite(v) && v >= 0) { estat.intervencio.valor = Math.min(v, cas().pMax); actualitza(); }
+    });
     $('mostra-preu').addEventListener('change', ev => { estat.preu.visible = ev.target.checked; actualitza(); });
     for (const tipus of ['demanda', 'oferta']) {
       $(`dades-${tipus}`).addEventListener('input', canviCamp);

@@ -324,3 +324,59 @@ a.boto { display: inline-block; text-decoration: none; }
 .llista-resultat .punts-res { color: var(--suau); }
 .grafic .guia.abans { opacity: .45; }
 .grafic .punt-eq.abans { fill: var(--targeta); stroke: var(--equilibri); stroke-width: 2.5; }
+
+/* ---------- Excedents i intervenció ---------- */
+
+:root {
+  --area-ec: rgba(37, 87, 167, .18);
+  --area-ep: rgba(194, 65, 12, .18);
+  --area-r: rgba(122, 76, 194, .25);
+  --area-pi: rgba(93, 101, 118, .35);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --area-ec: rgba(109, 156, 240, .25);
+    --area-ep: rgba(240, 137, 79, .25);
+    --area-r: rgba(185, 154, 240, .3);
+    --area-pi: rgba(154, 162, 177, .35);
+  }
+}
+.grafic .area { stroke: none; }
+.grafic .area-EC { fill: var(--area-ec); }
+.grafic .area-EP { fill: var(--area-ep); }
+.grafic .area-R { fill: var(--area-r); }
+.grafic .area-PI { fill: var(--area-pi); }
+.grafic .etiqueta-area { font-size: 13px; font-weight: 700; fill: var(--text); opacity: .8; }
+.grafic .corba.impost .traç { stroke-dasharray: 9 5; stroke-width: 3; }
+.grafic .linia-iv { stroke: var(--alerta); stroke-width: 2.5; }
+.grafic .nansa.intervencio { cursor: ns-resize; }
+.grafic .nansa.intervencio.fixa { cursor: default; }
+.grafic .nansa.intervencio .toc { stroke: transparent; stroke-width: 16; }
+.grafic .nansa.intervencio .marca-nansa { fill: var(--alerta); stroke: none; }
+.grafic .nansa.intervencio:focus-visible .marca-nansa { stroke: var(--text); stroke-width: 2; }
+.grafic .guia-iv { stroke: var(--preu); stroke-width: 1.5; stroke-dasharray: 5 4; }
+.grafic .punt-iv { fill: var(--preu); stroke: var(--targeta); stroke-width: 2; }
+.grafic .etiqueta-iv { fill: var(--preu); font-size: 13px; font-weight: 700; paint-order: stroke; stroke: var(--targeta); stroke-width: 4px; }
+
+.controls-iv { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
+.camp-iv { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.camp-iv select, .camp-iv input {
+  font: inherit; padding: 4px 6px; border-radius: 6px; border: 1px solid var(--vora);
+  background: var(--targeta); color: var(--text);
+}
+.camp-iv input { width: 5.5em; }
+.taula-excedents { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: .9rem; }
+.taula-excedents th, .taula-excedents td { padding: 4px 6px; border-top: 1px solid var(--vora); text-align: right; }
+.taula-excedents th[scope="row"], .taula-excedents thead th:first-child { text-align: left; font-weight: 400; color: var(--suau); }
+.taula-excedents thead th { font-size: .8rem; color: var(--suau); font-weight: 600; }
+.taula-excedents tr.total td, .taula-excedents tr.total th { font-weight: 700; color: var(--text); }
+.taula-excedents tr.perdua td { color: var(--alerta); font-weight: 700; }
+.mostra { display: inline-block; width: 11px; height: 11px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+.mostra.area-EC { background: var(--area-ec); border: 1px solid var(--demanda); }
+.mostra.area-EP { background: var(--area-ep); border: 1px solid var(--oferta); }
+.mostra.area-R { background: var(--area-r); border: 1px solid var(--preu); }
+.mostra.area-PI { background: var(--area-pi); border: 1px solid var(--suau); }
+
+/* Els elements decoratius no han de tapar les corbes ni les nanses. */
+.grafic .equilibri, .grafic g.intervencio:not(.nansa), .grafic .arees, .grafic g.preu:not(.nansa),
+.grafic .etiqueta-corba, .grafic .corba .fantasma, .grafic .corba .traç { pointer-events: none; }
